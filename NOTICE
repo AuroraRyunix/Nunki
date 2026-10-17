@@ -1,0 +1,19 @@
+Nunki
+Copyright 2026 Jorian Burssens
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+The release tooling (rel/, the GitHub workflows, the data-home rule, the
+update check and the launcher's Details endpoint) and the join and link
+clients came from Alnasl (https://github.com/AuroraRyunix/Alnasl) and
+Arkab (https://github.com/AuroraRyunix/Arkab), by the same author and
+under the same licence. Changes: the names (Alnasl/Arkab -> Nunki), the
+port, what is kept (a JSON file instead of a database) and what is talked
+about over the link.
+
+The Windows release carries Microsoft's Visual C++ runtime DLLs
+(vcruntime140.dll, vcruntime140_1.dll, msvcp140.dll) beside erl.exe, as
+Microsoft allows for programs that need them.
+
+Speech is produced by the operating system's own engines (Windows speech,
+macOS say, espeak-ng or speech-dispatcher); none of them is included.

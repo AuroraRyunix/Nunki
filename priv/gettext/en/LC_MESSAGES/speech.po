@@ -1,0 +1,52 @@
+## "msgid"s in this file come from POT (.pot) files.
+###
+### Do not add, change, or remove "msgid"s manually here as
+### they're tied to the ones in the corresponding POT file
+### (with the same domain).
+###
+### Use "mix gettext.extract --merge" or "mix gettext.merge"
+### to merge POT files into PO files.
+msgid ""
+msgstr ""
+"Language: en\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: lib/nunki/script.ex:38
+#, elixir-autogen, elixir-format
+msgid "%{name} has a bye."
+msgstr ""
+
+#: lib/nunki/script.ex:29
+#, elixir-autogen, elixir-format
+msgid "Board %{board}: %{white} against %{black}."
+msgstr ""
+
+#: lib/nunki/script.ex:25
+#, elixir-autogen, elixir-format
+msgid "Pairings for round %{round} are published."
+msgstr ""
+
+#: lib/nunki/script.ex:56
+#, elixir-autogen, elixir-format
+msgid "Round %{round} starts in five minutes."
+msgstr ""
+
+#: lib/nunki/script.ex:59
+#, elixir-autogen, elixir-format
+msgid "Round %{round} starts in one minute. Please go to your board."
+msgstr ""
+
+#: lib/nunki/script.ex:53
+#, elixir-autogen, elixir-format
+msgid "Round %{round} starts in ten minutes."
+msgstr ""
+
+#: lib/nunki/script.ex:66
+#, elixir-autogen, elixir-format
+msgid "Round %{round} starts now. Please start the clocks."
+msgstr ""
+
+#: lib/nunki/script.ex:74
+#, elixir-autogen, elixir-format
+msgid "This is how announcements in this hall will sound."
+msgstr ""

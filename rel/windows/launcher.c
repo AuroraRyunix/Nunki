@@ -56,7 +56,8 @@
  * --veloapp-updated, --veloapp-obsolete and --veloapp-uninstall, and wait
  * for it. Those are not a reason to start a server. The uninstall hook
  * removes the "start with Windows" value this program may have written
- * (`Nunki.Autostart`) and nothing else: no file, and never the data.
+ * (no version writes one yet; the hook is ready for the one that does) and
+ * nothing else: no file, and never the data.
  */
 
 #define UNICODE

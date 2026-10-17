@@ -93,6 +93,11 @@ defmodule Nunki.Countdown do
         %{id: ^id, started_at: nil} = running ->
           %{running | ends_at: ends_at, round: round}
 
+        # Restated after zero (a reconnect just after the start): the round
+        # has started, and saying so twice is how a hall learns to ignore it.
+        %{id: ^id} = started ->
+          started
+
         _new_or_other ->
           %{
             tournament: tournament,
