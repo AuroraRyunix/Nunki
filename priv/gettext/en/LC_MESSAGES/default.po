@@ -11,14 +11,14 @@ msgstr ""
 "Language: en\n"
 "Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
-#: lib/nunki_web/live/control_live.ex:562
+#: lib/nunki_web/live/control_live.ex:594
 #, elixir-autogen, elixir-format
 msgid "1 minute"
 msgid_plural "%{count} minutes"
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/nunki_web/live/control_live.ex:286
+#: lib/nunki_web/live/control_live.ex:308
 #, elixir-autogen, elixir-format
 msgid "1 more line to say."
 msgid_plural "%{count} more lines to say."
@@ -30,27 +30,27 @@ msgstr[1] ""
 msgid "A countdown is running."
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:568
+#: lib/nunki_web/live/control_live.ex:600
 #, elixir-autogen, elixir-format
 msgid "Add the language under Settings, Time & language, Speech."
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:600
+#: lib/nunki_web/live/control_live.ex:632
 #, elixir-autogen, elixir-format
 msgid "An update stops Nunki for about a minute, and a countdown stopped a minute before zero is a round that starts in silence."
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:364
+#: lib/nunki_web/live/control_live.ex:386
 #, elixir-autogen, elixir-format
 msgid "Cancel the countdown"
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:323
+#: lib/nunki_web/live/control_live.ex:345
 #, elixir-autogen, elixir-format
 msgid "Connected"
 msgstr ""
 
-#: lib/nunki_web/components/layouts.ex:47
+#: lib/nunki_web/components/layouts.ex:52
 #, elixir-autogen, elixir-format
 msgid "Control"
 msgstr ""
@@ -60,7 +60,7 @@ msgstr ""
 msgid "Could not reach the server. Check the link and the network."
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:378
+#: lib/nunki_web/live/control_live.ex:400
 #, elixir-autogen, elixir-format
 msgid "Countdown"
 msgstr ""
@@ -70,27 +70,27 @@ msgstr ""
 msgid "Dismiss"
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:651
+#: lib/nunki_web/live/control_live.ex:683
 #, elixir-autogen, elixir-format
 msgid "Don't ask again"
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:571
+#: lib/nunki_web/live/control_live.ex:603
 #, elixir-autogen, elixir-format
 msgid "Download one under System Settings, Accessibility, Spoken Content."
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:505
+#: lib/nunki_web/live/control_live.ex:527
 #, elixir-autogen, elixir-format
 msgid "Dutch voice"
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:489
+#: lib/nunki_web/live/control_live.ex:511
 #, elixir-autogen, elixir-format
 msgid "English voice"
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:472
+#: lib/nunki_web/live/control_live.ex:494
 #, elixir-autogen, elixir-format
 msgid "Follow the tournament"
 msgstr ""
@@ -100,60 +100,60 @@ msgstr ""
 msgid "Full screen"
 msgstr ""
 
-#: lib/nunki_web/components/layouts.ex:50
-#: lib/nunki_web/live/control_live.ex:405
+#: lib/nunki_web/components/layouts.ex:55
+#: lib/nunki_web/live/control_live.ex:427
 #: lib/nunki_web/live/hall_live.ex:27
 #, elixir-autogen, elixir-format
 msgid "Hall screen"
 msgstr ""
 
-#: lib/nunki_web/components/layouts.ex:53
-#: lib/nunki_web/live/help_live.ex:13
+#: lib/nunki_web/components/layouts.ex:58
+#: lib/nunki_web/live/help_live.ex:14
 #, elixir-autogen, elixir-format
 msgid "Help"
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:460
+#: lib/nunki_web/live/control_live.ex:482
 #, elixir-autogen, elixir-format
 msgid "How Nunki speaks"
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:535
+#: lib/nunki_web/live/control_live.ex:557
 #, elixir-autogen, elixir-format
 msgid "How OpenPairings lists this device."
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:624
+#: lib/nunki_web/live/control_live.ex:656
 #, elixir-autogen, elixir-format
 msgid "Install"
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:634
+#: lib/nunki_web/live/control_live.ex:666
 #, elixir-autogen, elixir-format
 msgid "Install anyway"
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:574
+#: lib/nunki_web/live/control_live.ex:606
 #, elixir-autogen, elixir-format
 msgid "Install espeak-ng (sudo apt install espeak-ng)."
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:632
+#: lib/nunki_web/live/control_live.ex:664
 #, elixir-autogen, elixir-format
 msgid "Install now anyway? Whatever is running or being said stops."
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:453
+#: lib/nunki_web/live/control_live.ex:475
 #, elixir-autogen, elixir-format
 msgid "Join"
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:435
+#: lib/nunki_web/live/control_live.ex:457
 #, elixir-autogen, elixir-format
 msgid "Join a tournament"
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:133
+#: lib/nunki_web/live/control_live.ex:145
 #, elixir-autogen, elixir-format
 msgid "Joined. The tournament is in the list."
 msgstr ""
@@ -163,77 +163,77 @@ msgstr ""
 msgid "Joining did not work."
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:451
+#: lib/nunki_web/live/control_live.ex:473
 #, elixir-autogen, elixir-format
 msgid "Joining..."
 msgstr ""
 
-#: lib/nunki_web/components/layouts.ex:88
+#: lib/nunki_web/components/layouts.ex:103
 #, elixir-autogen, elixir-format
 msgid "Language"
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:470
+#: lib/nunki_web/live/control_live.ex:492
 #, elixir-autogen, elixir-format
 msgid "Language of the announcements"
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:333
+#: lib/nunki_web/live/control_live.ex:355
 #, elixir-autogen, elixir-format
 msgid "Last pairings received: round %{round} of %{rounds}, %{boards} boards."
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:640
+#: lib/nunki_web/live/control_live.ex:672
 #, elixir-autogen, elixir-format
 msgid "Later"
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:552
+#: lib/nunki_web/live/control_live.ex:574
 #, elixir-autogen, elixir-format
 msgid "Look for new versions (one small question to GitHub, every half hour)"
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:462
+#: lib/nunki_web/live/control_live.ex:484
 #, elixir-autogen, elixir-format
 msgid "Look for voices again"
 msgstr ""
 
-#: lib/nunki_web/components/layouts.ex:127
+#: lib/nunki_web/components/layouts.ex:142
 #, elixir-autogen, elixir-format
 msgid "Lost the connection to Nunki. Trying again..."
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:534
+#: lib/nunki_web/live/control_live.ex:556
 #, elixir-autogen, elixir-format
 msgid "Name"
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:509
+#: lib/nunki_web/live/control_live.ex:531
 #, elixir-autogen, elixir-format
 msgid "No Dutch voice on this machine."
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:493
+#: lib/nunki_web/live/control_live.ex:515
 #, elixir-autogen, elixir-format
 msgid "No English voice on this machine."
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:339
+#: lib/nunki_web/live/control_live.ex:361
 #, elixir-autogen, elixir-format
 msgid "No pairings received yet."
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:156
+#: lib/nunki_web/live/control_live.ex:168
 #, elixir-autogen, elixir-format
 msgid "No pairings to read yet."
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:174
+#: lib/nunki_web/live/control_live.ex:186
 #, elixir-autogen, elixir-format
 msgid "No pairings yet: nothing to count down to."
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:520
+#: lib/nunki_web/live/control_live.ex:542
 #, elixir-autogen, elixir-format
 msgid "No speech engine found on this machine."
 msgstr ""
@@ -243,17 +243,17 @@ msgstr ""
 msgid "No tournament joined yet."
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:315
+#: lib/nunki_web/live/control_live.ex:337
 #, elixir-autogen, elixir-format
 msgid "No tournament yet. In OpenPairings, open the tournament's Hall announcer page, press \"Add an announcer\" and paste the link below."
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:323
+#: lib/nunki_web/live/control_live.ex:345
 #, elixir-autogen, elixir-format
 msgid "Not connected"
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:637
+#: lib/nunki_web/live/control_live.ex:669
 #, elixir-autogen, elixir-format
 msgid "Not now"
 msgstr ""
@@ -263,17 +263,17 @@ msgstr ""
 msgid "Nothing answers at that address."
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:26
+#: lib/nunki_web/live/control_live.ex:37
 #, elixir-autogen, elixir-format
 msgid "Nunki"
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:589
+#: lib/nunki_web/live/control_live.ex:621
 #, elixir-autogen, elixir-format
 msgid "Nunki %{version} is out. This one is %{current}."
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:542
+#: lib/nunki_web/live/control_live.ex:564
 #, elixir-autogen, elixir-format
 msgid "Nunki %{version}."
 msgstr ""
@@ -283,42 +283,42 @@ msgstr ""
 msgid "Nunki is speaking."
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:309
+#: lib/nunki_web/live/control_live.ex:331
 #, elixir-autogen, elixir-format
 msgid "Open the hall screen"
 msgstr ""
 
-#: lib/nunki_web/components/layouts.ex:45
+#: lib/nunki_web/components/layouts.ex:50
 #, elixir-autogen, elixir-format
 msgid "Pages"
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:283
+#: lib/nunki_web/live/control_live.ex:305
 #, elixir-autogen, elixir-format
 msgid "Quiet."
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:401
+#: lib/nunki_web/live/control_live.ex:423
 #, elixir-autogen, elixir-format
 msgid "Read now"
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:481
+#: lib/nunki_web/live/control_live.ex:503
 #, elixir-autogen, elixir-format
 msgid "Read the pairings when they are published"
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:419
+#: lib/nunki_web/live/control_live.ex:441
 #, elixir-autogen, elixir-format
 msgid "Remove"
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:414
+#: lib/nunki_web/live/control_live.ex:436
 #, elixir-autogen, elixir-format
 msgid "Remove this tournament from Nunki? OpenPairings is told, and nothing more is announced for it here."
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:147
+#: lib/nunki_web/live/control_live.ex:159
 #, elixir-autogen, elixir-format
 msgid "Removed."
 msgstr ""
@@ -333,7 +333,7 @@ msgstr ""
 msgid "Round %{round} has started"
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:350
+#: lib/nunki_web/live/control_live.ex:372
 #, elixir-autogen, elixir-format
 msgid "Round %{round} has started."
 msgstr ""
@@ -343,43 +343,43 @@ msgstr ""
 msgid "Round %{round} starts in"
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:352
+#: lib/nunki_web/live/control_live.ex:374
 #, elixir-autogen, elixir-format
 msgid "Round %{round} starts in %{time}."
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:537
+#: lib/nunki_web/live/control_live.ex:559
 #, elixir-autogen, elixir-format
 msgid "Save"
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:211
+#: lib/nunki_web/live/control_live.ex:223
 #, elixir-autogen, elixir-format
 msgid "Saved."
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:518
+#: lib/nunki_web/live/control_live.ex:540
 #, elixir-autogen, elixir-format
 msgid "Speech engine: %{engine}."
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:387
+#: lib/nunki_web/live/control_live.ex:409
 #, elixir-autogen, elixir-format
 msgid "Start"
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:300
+#: lib/nunki_web/live/control_live.ex:322
 #, elixir-autogen, elixir-format
 msgid "Stop"
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:648
+#: lib/nunki_web/live/control_live.ex:680
 #, elixir-autogen, elixir-format
 msgid "Stop looking for new versions? You can switch it on again under This device."
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:496
-#: lib/nunki_web/live/control_live.ex:512
+#: lib/nunki_web/live/control_live.ex:518
+#: lib/nunki_web/live/control_live.ex:534
 #, elixir-autogen, elixir-format
 msgid "Test voice"
 msgstr ""
@@ -415,7 +415,7 @@ msgstr ""
 msgid "That server speaks a different version of the hall protocol. Update Nunki."
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:594
+#: lib/nunki_web/live/control_live.ex:626
 #, elixir-autogen, elixir-format
 msgid "The download is %{size}."
 msgstr ""
@@ -425,7 +425,7 @@ msgstr ""
 msgid "The line is down. Trying again."
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:440
+#: lib/nunki_web/live/control_live.ex:462
 #, elixir-autogen, elixir-format
 msgid "The link from OpenPairings, Hall announcer, \"Add an announcer\". Good once, for fifteen minutes."
 msgstr ""
@@ -460,32 +460,32 @@ msgstr ""
 msgid "The server went silent."
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:241
+#: lib/nunki_web/live/control_live.ex:253
 #, elixir-autogen, elixir-format
 msgid "The update could not be started."
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:289
+#: lib/nunki_web/live/control_live.ex:311
 #, elixir-autogen, elixir-format
 msgid "The voice did not work: %{error}"
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:610
+#: lib/nunki_web/live/control_live.ex:642
 #, elixir-autogen, elixir-format
 msgid "This copy does not update itself: download the new version and replace this one."
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:528
+#: lib/nunki_web/live/control_live.ex:550
 #, elixir-autogen, elixir-format
 msgid "This device"
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:306
+#: lib/nunki_web/live/control_live.ex:328
 #, elixir-autogen, elixir-format
 msgid "Tournaments"
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:605
+#: lib/nunki_web/live/control_live.ex:637
 #, elixir-autogen, elixir-format
 msgid "Updating. Nunki stops and comes back in about a minute; this page reconnects by itself."
 msgstr ""
@@ -495,7 +495,7 @@ msgstr ""
 msgid "Waiting for the pairings."
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:616
+#: lib/nunki_web/live/control_live.ex:648
 #, elixir-autogen, elixir-format
 msgid "What is new"
 msgstr ""
@@ -505,12 +505,32 @@ msgstr ""
 msgid "bye"
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:328
+#: lib/nunki_web/live/control_live.ex:350
 #, elixir-autogen, elixir-format
 msgid "connected"
 msgstr ""
 
-#: lib/nunki_web/live/control_live.ex:329
+#: lib/nunki_web/live/control_live.ex:351
 #, elixir-autogen, elixir-format
 msgid "not connected"
+msgstr ""
+
+#: lib/nunki_web/components/layouts.ex:72
+#, elixir-autogen, elixir-format
+msgid "Install it on the control page"
+msgstr ""
+
+#: lib/nunki_web/components/layouts.ex:70
+#, elixir-autogen, elixir-format
+msgid "Nunki %{version} is out."
+msgstr ""
+
+#: lib/nunki_web/live/control_live.ex:584
+#, elixir-autogen, elixir-format
+msgid "Start Nunki when Windows starts"
+msgstr ""
+
+#: lib/nunki_web/live/control_live.ex:263
+#, elixir-autogen, elixir-format
+msgid "Windows would not take that setting."
 msgstr ""

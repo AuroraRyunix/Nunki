@@ -10,7 +10,18 @@ defmodule NunkiWeb.ControlLive do
   """
   use NunkiWeb, :live_view
 
-  alias Nunki.{Announcer, Countdown, Script, Speaker, Store, Tournaments, Updates, Voice}
+  alias Nunki.{
+    Announcer,
+    Autostart,
+    Countdown,
+    Script,
+    Speaker,
+    Store,
+    Tournaments,
+    Updates,
+    Voice
+  }
+
   alias NunkiWeb.Words
 
   @impl true
@@ -51,6 +62,7 @@ defmodule NunkiWeb.ControlLive do
       engine: engine(),
       update_mode: Updates.mode(),
       install_kind: Updates.install_kind(),
+      autostart?: Autostart.supported?() and Autostart.enabled?(),
       speech_form: speech_form(settings),
       device_form: to_form(%{"name" => Store.device_name()}, as: :device)
     )
@@ -239,6 +251,16 @@ defmodule NunkiWeb.ControlLive do
 
       {:error, _other} ->
         {:noreply, put_flash(socket, :error, gettext("The update could not be started."))}
+    end
+  end
+
+  def handle_event("autostart", params, socket) do
+    case Autostart.set(params["on"] == "true") do
+      :ok ->
+        {:noreply, load(socket)}
+
+      {:error, _words} ->
+        {:noreply, put_flash(socket, :error, gettext("Windows would not take that setting."))}
     end
   end
 
@@ -550,6 +572,16 @@ defmodule NunkiWeb.ControlLive do
               phx-value-mode={if @update_mode == "ask", do: "never", else: "ask"}
             />
             <span>{gettext("Look for new versions (one small question to GitHub, every half hour)")}</span>
+          </label>
+          <label :if={Autostart.supported?()} class="check" for="autostart">
+            <input
+              id="autostart"
+              type="checkbox"
+              checked={@autostart?}
+              phx-click="autostart"
+              phx-value-on={to_string(!@autostart?)}
+            />
+            <span>{gettext("Start Nunki when Windows starts")}</span>
           </label>
         </div>
       </section>

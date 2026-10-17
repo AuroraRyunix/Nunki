@@ -9,13 +9,22 @@ defmodule NunkiWeb.HelpLive do
   use NunkiWeb, :live_view
 
   @impl true
-  def mount(_params, _session, socket),
-    do: {:ok, assign(socket, page_title: gettext("Help"))}
+  def mount(_params, _session, socket) do
+    if connected?(socket), do: Nunki.Updates.subscribe()
+    {:ok, assign(socket, page_title: gettext("Help"), update: Nunki.Updates.notice())}
+  end
+
+  # A newer version heard of, or put off: the banner follows.
+  @impl true
+  def handle_info(:update_changed, socket),
+    do: {:noreply, assign(socket, update: Nunki.Updates.notice())}
+
+  def handle_info(_other, socket), do: {:noreply, socket}
 
   @impl true
   def render(%{locale: "nl"} = assigns) do
     ~H"""
-    <Layouts.app flash={@flash} locale={@locale} page={:help}>
+    <Layouts.app flash={@flash} locale={@locale} page={:help} update={@update}>
       <article id="manual" class="manual">
         <h1>Nunki, de omroeper van de zaal</h1>
 
@@ -33,7 +42,7 @@ defmodule NunkiWeb.HelpLive do
           <h2>Een toernooi koppelen</h2>
           <ol>
             <li>
-              Open in OpenPairings het toernooi, de pagina Omroeper, en druk op "Een omroeper toevoegen".
+              Open in OpenPairings het toernooi, de pagina Omroeper, en druk op "Omroeper toevoegen".
             </li>
             <li>
               Kopieer de link en plak hem op deze pagina in "Bij een toernooi aansluiten". Druk op Aansluiten.
@@ -90,6 +99,28 @@ defmodule NunkiWeb.HelpLive do
           </p>
         </section>
 
+        <section id="manual-update">
+          <h2>Nieuwe versies</h2>
+          <p>
+            Nunki kijkt elk half uur of er een nieuwe versie is, en zegt het dan bovenaan de bedieningspagina en hier. Installeren doe je zelf: Nunki is dan ongeveer een minuut stil. Loopt er een aftelling of wordt er voorgelezen, dan vraagt Nunki eerst; "Toch installeren" is het tweede ja. Het zaalscherm toont nooit dat er een update is. Wil je er niets van horen, zet dan "Zoeken naar nieuwe versies" uit.
+          </p>
+          <p>
+            De installatie voor Windows en die voor Linux (met install.sh) werken zichzelf bij. Een draagbare kopie en de Mac-app vervang je met de hand. Een geïnstalleerde Windows-kopie kan ook met Windows mee starten; dat staat uit tot je het aanzet.
+          </p>
+        </section>
+
+        <section id="manual-data">
+          <h2>Waar Nunki bewaart wat het weet</h2>
+          <p>
+            Eén bestand, <span class="mono">state.json</span>, in een map die nooit binnen het programma zelf ligt, zodat een update of het verwijderen van Nunki er niet aan komt: op Windows <span class="mono">%LOCALAPPDATA%\NunkiData</span>, op een Mac <span class="mono">~/Library/Application Support/NunkiData</span>, op Linux met install.sh <span class="mono">/var/lib/nunki</span>, anders <span class="mono">~/.nunki</span>. De omgevingsvariabele
+            <span class="mono">NUNKI_DATA</span>
+            kiest een andere.
+          </p>
+          <p>
+            Daarin staan de toernooien met hun sleutels en de instellingen. Geef dat bestand aan niemand: met de sleutels kan een ander zich als deze omroeper aanmelden.
+          </p>
+        </section>
+
         <section id="manual-trouble">
           <h2>Als het stil blijft</h2>
           <ul>
@@ -111,7 +142,7 @@ defmodule NunkiWeb.HelpLive do
 
   def render(assigns) do
     ~H"""
-    <Layouts.app flash={@flash} locale={@locale} page={:help}>
+    <Layouts.app flash={@flash} locale={@locale} page={:help} update={@update}>
       <article id="manual" class="manual">
         <h1>Nunki, the hall announcer</h1>
 
@@ -178,6 +209,28 @@ defmodule NunkiWeb.HelpLive do
             <li>Linux: install espeak-ng. It sounds like a robot, but a punctual one.</li>
           </ul>
           <p>Choose a voice per language and press "Test voice" to hear how it sounds in the hall.</p>
+        </section>
+
+        <section id="manual-update">
+          <h2>New versions</h2>
+          <p>
+            Nunki looks for a new version every half hour and says so at the top of the control page and here. Installing is yours to start: Nunki is quiet for about a minute. When a countdown runs or something is being read, Nunki asks first; "Install anyway" is the second yes. The hall screen never shows that there is an update. To hear nothing of it, switch off "Look for new versions".
+          </p>
+          <p>
+            The Windows installation and the Linux one (with install.sh) update themselves. A portable copy and the Mac app are replaced by hand. An installed Windows copy can also start with Windows; that is off until you switch it on.
+          </p>
+        </section>
+
+        <section id="manual-data">
+          <h2>Where Nunki keeps what it knows</h2>
+          <p>
+            One file, <span class="mono">state.json</span>, in a folder that is never inside the program itself, so that an update or removing Nunki does not touch it: on Windows <span class="mono">%LOCALAPPDATA%\NunkiData</span>, on a Mac <span class="mono">~/Library/Application Support/NunkiData</span>, on Linux with install.sh <span class="mono">/var/lib/nunki</span>, otherwise <span class="mono">~/.nunki</span>. The environment variable
+            <span class="mono">NUNKI_DATA</span>
+            picks another.
+          </p>
+          <p>
+            In it are the tournaments with their keys, and the settings. Give that file to nobody: with the keys, someone else can sign in as this announcer.
+          </p>
         </section>
 
         <section id="manual-trouble">

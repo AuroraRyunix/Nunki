@@ -8,7 +8,7 @@ defmodule NunkiWeb.HelpLiveTest do
 
   @endpoint NunkiWeb.Endpoint
 
-  @sections ~w(what join speech hall voices trouble)
+  @sections ~w(what join speech hall voices update data trouble)
 
   test "English" do
     {:ok, view, _html} = live(build_conn(), "/help")
@@ -22,6 +22,42 @@ defmodule NunkiWeb.HelpLiveTest do
     {:ok, view, html} = live(recycle(conn), "/help")
     assert html =~ "omroeper"
     for s <- @sections, do: assert(has_element?(view, "#manual-#{s}"), s)
+  end
+
+  test "a newer version is announced on the help page too, pointing at the control page" do
+    {:ok, view, _html} = live(build_conn(), "/help")
+    refute has_element?(view, "#update-banner")
+
+    Nunki.Updates.Checker.put(%{
+      version: "9.9.9",
+      tag: "v9.9.9",
+      url: "https://example.invalid",
+      size: nil,
+      asset: "a",
+      no_build: false
+    })
+
+    on_exit(fn -> Nunki.Updates.Checker.forget() end)
+
+    {:ok, view, _html} = live(build_conn(), "/help")
+    assert has_element?(view, "#update-banner", "9.9.9")
+    assert has_element?(view, "#update-banner-control[href='/']")
+  end
+
+  test "the hall screen never shows it" do
+    Nunki.Updates.Checker.put(%{
+      version: "9.9.9",
+      tag: "v9.9.9",
+      url: "https://example.invalid",
+      size: nil,
+      asset: "a",
+      no_build: false
+    })
+
+    on_exit(fn -> Nunki.Updates.Checker.forget() end)
+
+    {:ok, view, _html} = live(build_conn(), "/hall")
+    refute has_element?(view, "#update-banner")
   end
 
   test "the favicon is the mark on an ink tile, in the night accent" do

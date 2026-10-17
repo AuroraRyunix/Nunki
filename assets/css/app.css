@@ -295,3 +295,4 @@ p { margin: 0.25rem 0; }
   .hall-boards .hb-dash { display: none; }
   .hall-boards .hb-black { grid-column: 2; }
 }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: .95em; }

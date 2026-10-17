@@ -68,11 +68,23 @@ said at a time; Stop kills the program and anything it started
 
 ## Installing
 
-**Windows.** `Nunki-Setup.exe` from the
-[latest release](https://github.com/AuroraRyunix/Nunki/releases/latest):
-per user, one click, no administrator. Or the portable zip: unpack, run
+Every release carries the same files under the same names:
+
+| What | Download |
+|---|---|
+| Windows installer (one click, updates itself) | [Nunki-Setup.exe](https://github.com/AuroraRyunix/Nunki/releases/latest/download/Nunki-Setup.exe) |
+| Windows, no install | [nunki-windows-x86_64-portable.zip](https://github.com/AuroraRyunix/Nunki/releases/latest/download/nunki-windows-x86_64-portable.zip) |
+| Linux, PC | [nunki-linux-x86_64.tar.gz](https://github.com/AuroraRyunix/Nunki/releases/latest/download/nunki-linux-x86_64.tar.gz) |
+| Linux, Raspberry Pi (64-bit) and other arm64 | [nunki-linux-aarch64.tar.gz](https://github.com/AuroraRyunix/Nunki/releases/latest/download/nunki-linux-aarch64.tar.gz) |
+| Mac, Apple Silicon | [nunki-macos-aarch64.zip](https://github.com/AuroraRyunix/Nunki/releases/latest/download/nunki-macos-aarch64.zip) |
+| Checksums | [SHA256SUMS](https://github.com/AuroraRyunix/Nunki/releases/latest/download/SHA256SUMS) |
+
+**Windows.** The installer is per user, one click, no administrator; Windows
+says it does not know the program, as it does of any unsigned installer:
+"More info", then "Run anyway". Or the portable zip: unpack, run
 `Nunki.exe`. The data (`state.json`) is in `%LOCALAPPDATA%\NunkiData` and
-survives uninstalling.
+survives uninstalling. "Start Nunki when Windows starts" is a switch on the
+control page of an installed copy, off until you turn it on.
 
 **Linux** (Debian, Ubuntu, Raspberry Pi OS, 64-bit):
 
@@ -86,6 +98,14 @@ A systemd service, user `nunki` in the `audio` group, data in
 
 **macOS** (Apple Silicon): `nunki-macos-aarch64.zip`, unzip, open
 `Nunki.app`, "Open Anyway" once ([docs/macos.md](docs/macos.md)).
+
+**Updates.** An installed copy looks for a newer release now and then (one
+small request to GitHub, switched off by a checkbox) and says so at the top
+of the control page and the help. It installs nothing without a yes, and
+not while a countdown runs or Nunki is speaking unless the yes is given
+twice: an update in the last minute before a round is the one announcement
+nobody wanted. The hall screen never shows it; the players have no use for
+our version numbers.
 
 Nunki listens on this machine only (port 4062). `NUNKI_LISTEN=lan` opens
 the pages to the hall's network - there is no PIN, so anybody on that

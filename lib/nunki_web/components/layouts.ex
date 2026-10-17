@@ -31,6 +31,11 @@ defmodule NunkiWeb.Layouts do
   attr :flash, :map, required: true
   attr :locale, :string, default: "en"
   attr :page, :atom, values: [:control, :hall, :help], default: :control
+
+  attr :update, :map,
+    default: nil,
+    doc: "`Nunki.Updates.notice/0`; the control page has its own, with the buttons"
+
   slot :inner_block, required: true
 
   def app(assigns) do
@@ -58,6 +63,16 @@ defmodule NunkiWeb.Layouts do
       </header>
 
       <.flash_group flash={@flash} />
+
+      <div :if={@update && @page != :control} id="update-banner" class="banner" role="status">
+        <.icon name="update" />
+        <p class="banner-text">
+          {gettext("Nunki %{version} is out.", version: @update.version)}
+          <.link id="update-banner-control" navigate={~p"/"}>
+            {gettext("Install it on the control page")}
+          </.link>
+        </p>
+      </div>
 
       <main class="page">
         {render_slot(@inner_block)}

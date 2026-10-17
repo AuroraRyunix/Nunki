@@ -17,6 +17,8 @@ config :nunki,
   launcher_details: false,
   updates_timer: false,
   install_kind: :manual,
+  # "Start with Windows" must not ask the registry of the machine the tests run on.
+  autostart_cmd: &Nunki.NoReg.cmd/3,
   # The countdown's clock, set by the test instead of waited for.
   clock: Nunki.TestClock
 

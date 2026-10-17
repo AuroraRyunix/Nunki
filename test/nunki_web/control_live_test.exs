@@ -147,6 +147,49 @@ defmodule NunkiWeb.ControlLiveTest do
     refute has_element?(view, "#update-banner")
   end
 
+  test "an installed copy: Install, refused while a countdown runs, then the second yes" do
+    Application.put_env(:nunki, :install_kind, :velopack)
+    me = self()
+    Application.put_env(:nunki, :updates_stop_fun, fn code -> send(me, {:stopped, code}) end)
+    Application.put_env(:nunki, :updates_stop_delay, 0)
+
+    Nunki.Updates.Checker.put(%{
+      version: "9.9.9",
+      tag: "v9.9.9",
+      url: "https://example.invalid",
+      size: nil,
+      asset: "NunkiApp-9.9.9-full.nupkg",
+      no_build: false
+    })
+
+    on_exit(fn ->
+      Nunki.Updates.Checker.forget()
+      Application.put_env(:nunki, :install_kind, :manual)
+      Application.delete_env(:nunki, :updates_stop_fun)
+      Application.delete_env(:nunki, :updates_stop_delay)
+    end)
+
+    id = tournament()
+    {:ok, _} = Countdown.start(id, 5, 900)
+
+    {:ok, view, _html} = live(build_conn(), "/")
+    view |> element("#update-apply") |> render_click()
+    assert has_element?(view, "#update-busy")
+    assert has_element?(view, "#update-force[data-confirm]")
+    refute_received {:stopped, _}
+
+    view |> element("#update-force") |> render_click()
+    assert has_element?(view, "#update-going")
+    assert_receive {:stopped, 90}
+    Countdown.cancel(id)
+  end
+
+  test "Start with Windows is offered only to an installed Windows copy" do
+    {:ok, view, _html} = live(build_conn(), "/")
+    # config/test.exs: install_kind is :manual.
+    refute has_element?(view, "#autostart")
+  end
+
   test "the language switch is a form posting to /locale" do
     {:ok, view, _html} = live(build_conn(), "/")
     assert has_element?(view, "form#language[action='/locale'] button#lang-nl")
