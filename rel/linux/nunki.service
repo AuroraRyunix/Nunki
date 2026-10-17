@@ -1,0 +1,58 @@
+# Nunki as a service: starts with the box, starts again when it falls over.
+# Installed by install.sh; kept current by update.sh. Settings an arbiter may
+# want to change are in /etc/nunki/nunki.env, not here - this file is
+# replaced by updates.
+
+[Unit]
+Description=Nunki - the hall announcer
+Documentation=https://github.com/AuroraRyunix/Nunki
+After=network.target
+
+[Service]
+Type=exec
+User=nunki
+Group=nunki
+# The sound card (/dev/snd/*) belongs to this group. A desktop's PipeWire or
+# PulseAudio is another matter: README, "Linux and sound".
+SupplementaryGroups=audio
+WorkingDirectory=/var/lib/nunki
+
+Environment=HOME=/var/lib/nunki
+Environment=LANG=C.UTF-8
+Environment=NUNKI_DATA=/var/lib/nunki
+Environment=PORT=4062
+# No Erlang distribution: no epmd, no node listening on the hall's network.
+Environment=RELEASE_DISTRIBUTION=none
+# The release writes its start-up configuration somewhere; /opt is not
+# writable for this user, and should not be.
+Environment=RELEASE_TMP=/run/nunki
+RuntimeDirectory=nunki
+# Tells the program that "Download and install" has somebody to ask
+# (nunki-update.path), and where that somebody leaves its answer.
+Environment=NUNKI_UPDATER=systemd
+Environment=NUNKI_UPDATE_STATUS=/var/lib/nunki-update/status
+EnvironmentFile=-/etc/nunki/nunki.env
+
+ExecStart=/opt/nunki/current/bin/nunki start
+Restart=on-failure
+RestartSec=3
+TimeoutStopSec=20
+
+# Not root, and not able to become it. The whole system read-only except the
+# data directory. No home directories, a /tmp of its own.
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths=/var/lib/nunki
+ProtectHome=yes
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+# Deliberately absent: PrivateDevices (the sound card is a device) and
+# MemoryDenyWriteExecute (the runtime compiles code as it goes).
+
+[Install]
+WantedBy=multi-user.target
