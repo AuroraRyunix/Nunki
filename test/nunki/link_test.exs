@@ -64,6 +64,49 @@ defmodule Nunki.LinkTest do
       eventually(fn -> Store.tournament(id)["announcer"]["room"] == "Foyer" end)
     end
 
+    test "the rooms the server offers are kept; an older server's frame has none" do
+      {server, id} =
+        joined(
+          on_welcome: [
+            %{
+              "type" => "settings",
+              "name" => "Hall PC",
+              "room" => "Main hall",
+              "rooms_available" => ["Main hall", "Annex"]
+            }
+          ]
+        )
+
+      eventually(fn -> Store.tournament(id)["announcer"] end)
+
+      assert Store.tournament(id)["announcer"] == %{
+               "name" => "Hall PC",
+               "room" => "Main hall",
+               "rooms_available" => ["Main hall", "Annex"]
+             }
+
+      # A frame without the key is an older server: no list, free text.
+      FakeServer.push(server, %{"type" => "settings", "name" => "Hall PC", "room" => ""})
+      eventually(fn -> Store.tournament(id)["announcer"]["room"] == "" end)
+      refute Map.has_key?(Store.tournament(id)["announcer"], "rooms_available")
+    end
+
+    test "a refused room is announced, and the frame still counts as the server's word" do
+      {server, id} = joined()
+      Nunki.subscribe()
+
+      FakeServer.push(server, %{
+        "type" => "settings",
+        "name" => "Hall PC",
+        "room" => "Annex",
+        "rooms_available" => ["Annex"],
+        "error" => "room"
+      })
+
+      assert_receive {:room_refused, ^id}, 2_000
+      assert Store.tournament(id)["announcer"]["room"] == "Annex"
+    end
+
     test "an empty name is not asked for; an empty room is" do
       {server, id} = joined()
       assert :ok = Tournaments.change_settings(id, "   ", "")

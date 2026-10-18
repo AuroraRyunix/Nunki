@@ -100,10 +100,22 @@ defmodule NunkiWeb.ControlLive do
         countdown: Countdown.get(t["id"]),
         announcer_name: announcer["name"],
         announcer_room: announcer["room"] || "",
+        room_options: room_options(announcer, values["room"]),
         settings_form: to_form(values, as: :announcer, id: "tournaments-#{t["id"]}-settings")
       }
     end
   end
+
+  # With a list of rooms from the server: "No room", the rooms, and, so a
+  # row that has one is not silently changed, the current value when it is
+  # free text from before rooms. Without one (an older server): nil, and the
+  # field stays a text field.
+  defp room_options(%{"rooms_available" => names}, value) when is_list(names) do
+    legacy = if value in [nil, ""] or value in names, do: [], else: [value]
+    [{gettext("No room"), ""} | Enum.map(names ++ legacy, &{&1, &1})]
+  end
+
+  defp room_options(_announcer, _value), do: nil
 
   defp speech_form(settings) do
     voices = settings["voices"] || %{}
@@ -317,6 +329,13 @@ defmodule NunkiWeb.ControlLive do
 
   def handle_info({:speaker, status}, socket), do: {:noreply, assign(socket, speaker: status)}
 
+  def handle_info({:room_refused, _tournament}, socket) do
+    {:noreply,
+     socket
+     |> put_flash(:error, gettext("That room is not one of this tournament's rooms."))
+     |> load()}
+  end
+
   def handle_info(:update_changed, socket),
     do: {:noreply, assign(socket, update: Updates.notice())}
 
@@ -419,6 +438,15 @@ defmodule NunkiWeb.ControlLive do
                 disabled={!t.up?}
               />
               <.input
+                :if={t.room_options}
+                field={t.settings_form[:room]}
+                type="select"
+                label={gettext("Room")}
+                options={t.room_options}
+                disabled={!t.up?}
+              />
+              <.input
+                :if={!t.room_options}
                 field={t.settings_form[:room]}
                 label={gettext("Room")}
                 maxlength="60"

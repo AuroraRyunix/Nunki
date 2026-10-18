@@ -121,6 +121,69 @@ defmodule NunkiWeb.ControlLiveTest do
     end
   end
 
+  describe "room choice" do
+    defp joined_with(frame) do
+      server = FakeServer.start()
+      FakeServer.set(server, :on_welcome, [Map.put(frame, "type", "settings")])
+      {:ok, id} = Nunki.Tournaments.join(FakeServer.link(server))
+      eventually(fn -> Nunki.Link.info(id).up? end)
+      eventually(fn -> Store.tournament(id)["announcer"] end)
+      {server, id}
+    end
+
+    test "with rooms from the server the room is a select, 'No room' first" do
+      {server, id} =
+        joined_with(%{
+          "name" => "Hall PC",
+          "room" => "Annex",
+          "rooms_available" => ["Main hall", "Annex"]
+        })
+
+      {:ok, view, _html} = live(build_conn(), "/")
+      row = "#tournaments-#{id}"
+
+      refute has_element?(view, "#{row}-settings input[name='announcer[room]']")
+      assert has_element?(view, "#{row}-settings select[name='announcer[room]']")
+      assert has_element?(view, "#{row}-settings select option[value='']", "No room")
+      assert has_element?(view, "#{row}-settings select option[value='Main hall']")
+      assert has_element?(view, "#{row}-settings select option[value='Annex'][selected]")
+
+      view
+      |> form("#{row}-settings", announcer: %{room: "Main hall"})
+      |> render_submit()
+
+      eventually(fn -> FakeServer.frames(server, "settings") != [] end)
+      assert [%{"room" => "Main hall"}] = FakeServer.frames(server, "settings")
+    end
+
+    test "a free-text room from before rooms stays as an option" do
+      {_server, id} =
+        joined_with(%{"name" => "Hall PC", "room" => "Old foyer", "rooms_available" => ["Annex"]})
+
+      {:ok, view, _html} = live(build_conn(), "/")
+
+      assert has_element?(
+               view,
+               "#tournaments-#{id}-settings select option[value='Old foyer'][selected]"
+             )
+    end
+
+    test "a refusal from the server is said on the page" do
+      {server, _id} = joined_with(%{"name" => "Hall PC", "room" => "", "rooms_available" => []})
+      {:ok, view, _html} = live(build_conn(), "/")
+
+      FakeServer.push(server, %{
+        "type" => "settings",
+        "name" => "Hall PC",
+        "room" => "",
+        "rooms_available" => [],
+        "error" => "room"
+      })
+
+      eventually(fn -> render(view) =~ "not one of this tournament" end)
+    end
+  end
+
   test "a joined tournament: its line, its round, Read now, a countdown, Remove" do
     id = tournament(payload(3))
     {:ok, view, _html} = live(build_conn(), "/")

@@ -55,6 +55,9 @@ defmodule NunkiWeb.HelpLive do
           <p>
             Elk toernooi heeft voor deze omroeper een naam en een ruimte (handig als de zaal meer dan één ruimte heeft). OpenPairings bewaart ze en is de baas: wijzig ze daar bij Instellingen → Omroeper, of hier, in de rij van het toernooi, zolang de verbinding aanstaat. Wat je hier invult is een verzoek; je ziet pas de nieuwe waarde als de server hem terugstuurt. Wie het laatst wijzigt, wint.
           </p>
+          <p>
+            De ruimte kies je uit de ruimtes van het toernooi (die maak je in OpenPairings bij Instellingen → Ruimtes). Een omroeper in een ruimte krijgt alleen de borden van die ruimte te horen; zonder ruimte krijgt hij ze allemaal. Een ruimte die het toernooi niet heeft, wordt geweigerd.
+          </p>
         </section>
 
         <section id="manual-speech">
@@ -173,6 +176,9 @@ defmodule NunkiWeb.HelpLive do
           </p>
           <p>
             Each tournament gives this announcer a name and a room (handy when the hall has more than one room). OpenPairings keeps them and has the final say: change them there under Settings → Hall announcer, or here, in the tournament's row, while the line is up. What you type here is a request; you see the new value once the server sends it back. Whoever changes it last wins.
+          </p>
+          <p>
+            The room is chosen from the tournament's rooms (made in OpenPairings under Settings → Rooms). An announcer in a room is read only the boards of that room; with no room it gets them all. A room the tournament does not have is refused.
           </p>
         </section>
 
