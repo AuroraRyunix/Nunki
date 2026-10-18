@@ -7,7 +7,7 @@ defmodule Nunki.Store do
        "device_id": "...", "device_name": "hall-pc",
        "tournaments": {"<local id>": {"id", "server", "socket", "key",
                                       "tournament": {"id", "name"},
-                                      "announcer": {"name", "room"},
+                                      "announcer": {"name", "room", "rooms_available"},
                                       "round": <the last round payload>,
                                       "announced": 3, "joined_at": "..."}},
        "settings": {"language": "follow", "voices": {"nl": "..."},
@@ -19,8 +19,10 @@ defmodule Nunki.Store do
   a few times a round; it can afford to be written whole.
 
   `"announcer"` is this device's name and room *in that tournament*, as the
-  server last said them (`settings` frame). The server is the truth: the
-  device asks for a change over the line and keeps what the server answers.
+  server last said them (`settings` frame), with `rooms_available`, the
+  names of the tournament's rooms (absent from an older server, which has
+  only free text). The server is the truth: the device asks for a change
+  over the line and keeps what the server answers.
 
   The key of each tournament is in the file and nowhere else: `tournaments/0`
   and `tournament/1` leave it out, so a page cannot show what it was never

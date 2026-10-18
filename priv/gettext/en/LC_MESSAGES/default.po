@@ -224,6 +224,11 @@ msgstr ""
 msgid "No pairings to read yet."
 msgstr ""
 
+#: lib/nunki_web/live/control_live.ex
+#, elixir-autogen, elixir-format
+msgid "No room"
+msgstr ""
+
 #: lib/nunki_web/live/control_live.ex:226
 #, elixir-autogen, elixir-format
 msgid "No pairings yet: nothing to count down to."
@@ -400,6 +405,11 @@ msgstr ""
 #: lib/nunki_web/words.ex:29
 #, elixir-autogen, elixir-format
 msgid "That link is for %{product}, not for Nunki. Ask OpenPairings for an announcer link."
+msgstr ""
+
+#: lib/nunki_web/live/control_live.ex
+#, elixir-autogen, elixir-format
+msgid "That room is not one of this tournament's rooms."
 msgstr ""
 
 #: lib/nunki_web/words.ex:38

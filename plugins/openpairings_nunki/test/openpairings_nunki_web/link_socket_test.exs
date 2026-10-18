@@ -169,45 +169,147 @@ defmodule OpenPairingsNunkiWeb.LinkSocketTest do
 
     defp row(a), do: Repo.get!(Announcer, a.id)
 
+    # Two rooms on the tournament: boards 1 and 2 in the first, 3 in the second.
+    defp rooms!(t) do
+      {:ok, t} =
+        PairingsEngine.Tournaments.update_tournament(t, %{
+          "rooms" => [
+            %{"name" => "Main hall", "boards" => "1-2"},
+            %{"name" => "Annex", "boards" => "3"}
+          ]
+        })
+
+      {t, PairingsEngine.Rooms.list(t)}
+    end
+
     test "come right after welcome, as the row has them", %{announcer: a} = ctx do
       assert [%{"type" => "welcome"}, settings] = frames(welcomed(ctx))
-      assert settings == %{"type" => "settings", "name" => "Hall PC", "room" => ""}
+
+      assert settings == %{
+               "type" => "settings",
+               "name" => "Hall PC",
+               "room" => "",
+               "rooms_available" => []
+             }
+
       assert row(a).room == ""
     end
 
-    test "the device's request is stored, trimmed and cut, and echoed once",
+    test "list the tournament's rooms", %{t: t} = ctx do
+      rooms!(t)
+      assert [_welcome, settings] = frames(welcomed(ctx))
+      assert settings["rooms_available"] == ["Main hall", "Annex"]
+    end
+
+    test "the device's name request is stored, trimmed and cut, and echoed once",
          %{announcer: a} = ctx do
       state = ctx |> welcomed() |> state()
       id = a.id
 
-      assert {:ok, state} = settings_in(state, %{name: "  Door PC  ", room: " Foyer "})
-      assert %{name: "Door PC", room: "Foyer"} = row(a)
+      assert {:ok, state} = settings_in(state, %{name: "  Door PC  "})
+      assert %{name: "Door PC"} = row(a)
       assert_receive {:nunki_settings_changed, ^id} = changed
 
       result = LinkSocket.handle_info(changed, state)
-      assert [%{"type" => "settings", "name" => "Door PC", "room" => "Foyer"}] = frames(result)
+      assert [%{"type" => "settings", "name" => "Door PC", "room" => ""}] = frames(result)
 
       # The same news again is not told twice.
       assert {:ok, _state} = LinkSocket.handle_info(changed, state(result))
 
       long = String.duplicate("x", 90)
-      assert {:ok, _state} = settings_in(state(result), %{name: long, room: long})
-      assert %{name: name, room: room} = row(a)
-      assert String.length(name) == 60 and String.length(room) == 60
+      assert {:ok, _state} = settings_in(state(result), %{name: long})
+      assert String.length(row(a).name) == 60
     end
 
-    test "an absent key stays, an empty name stays, an empty room goes", %{announcer: a} = ctx do
+    test "a room by name is set (any case, trimmed) with its id, and cleared by empty",
+         %{t: t, announcer: a} = ctx do
+      {_t, [main, _annex]} = rooms!(t)
       state = ctx |> welcomed() |> state()
-      {:ok, state} = settings_in(state, %{name: "Door PC", room: "Foyer"})
+
+      assert {:ok, state} = settings_in(state, %{room: "  main HALL "})
+      assert %{room: "Main hall", room_id: id} = row(a)
+      assert id == main.id
 
       {:ok, state} = settings_in(state, %{name: "Lobby PC"})
-      assert %{name: "Lobby PC", room: "Foyer"} = row(a)
+      assert %{name: "Lobby PC", room_id: ^id} = row(a)
 
       {:ok, state} = settings_in(state, %{name: "   ", room: ""})
-      assert %{name: "Lobby PC", room: ""} = row(a)
+      assert %{name: "Lobby PC", room: "", room_id: ""} = row(a)
 
+      # Absent key: untouched; and a name that is no room is refused.
       {:ok, _state} = settings_in(state, %{room: "Annex"})
-      assert %{name: "Lobby PC", room: "Annex"} = row(a)
+      assert %{room: "Annex"} = row(a)
+    end
+
+    test "a room that is none of the tournament's is refused, with the current settings",
+         %{t: t, announcer: a} = ctx do
+      rooms!(t)
+      state = ctx |> welcomed() |> state()
+
+      result = settings_in(state, %{name: "Door PC", room: "Foyer"})
+
+      assert [
+               %{
+                 "type" => "settings",
+                 "name" => "Hall PC",
+                 "room" => "",
+                 "rooms_available" => ["Main hall", "Annex"],
+                 "error" => "room"
+               }
+             ] = frames(result)
+
+      # Nothing was stored, not even the name that came along.
+      assert %{name: "Hall PC", room: "", room_id: ""} = row(a)
+    end
+
+    test "a refusal with no rooms at all is the same", %{announcer: a} = ctx do
+      state = ctx |> welcomed() |> state()
+      result = settings_in(state, %{room: "Anywhere"})
+      assert [%{"error" => "room", "rooms_available" => []}] = frames(result)
+      assert row(a).room == ""
+    end
+
+    test "legacy free text is a label: kept, told, accepted back, never a room",
+         %{t: t, announcer: a} = ctx do
+      Repo.update_all(from(x in Announcer, where: x.id == ^a.id), set: [room: "Old foyer"])
+      state = ctx |> welcomed() |> state()
+      assert %{room: "Old foyer", room_id: ""} = row(a)
+
+      # Told as it is, even with rooms in the tournament.
+      rooms!(t)
+      result = LinkSocket.handle_info(:recheck, %{state | recheck: nil})
+      assert [%{"type" => "settings", "room" => "Old foyer"}] = frames(result)
+
+      # The device echoes it back: unchanged, not refused.
+      assert {:ok, state} = settings_in(state(result), %{name: "Hall PC", room: "Old foyer"})
+      assert %{room: "Old foyer", room_id: ""} = row(a)
+
+      # Another text is refused.
+      assert [%{"error" => "room"}] = frames(settings_in(state, %{room: "Older foyer"}))
+    end
+
+    test "a rename of the room follows, and a deleted room is no room",
+         %{t: t, announcer: a} = ctx do
+      {t, [main, annex]} = rooms!(t)
+      state = ctx |> welcomed() |> state()
+      {:ok, state} = settings_in(state, %{room: "Main hall"})
+      id = a.id
+      assert_receive {:nunki_settings_changed, ^id}
+
+      renamed = [
+        %{"id" => main.id, "name" => "Great hall", "boards" => "1-2"},
+        %{"id" => annex.id, "name" => "Annex", "boards" => "3"}
+      ]
+
+      {:ok, t} = PairingsEngine.Tournaments.update_tournament(t, %{"rooms" => renamed})
+      result = LinkSocket.handle_info(:recheck, %{state | recheck: nil})
+      assert [%{"type" => "settings", "room" => "Great hall"}] = frames(result)
+
+      {:ok, _t} =
+        PairingsEngine.Tournaments.update_tournament(t, %{"rooms" => [List.last(renamed)]})
+
+      result = LinkSocket.handle_info(:recheck, %{state(result) | recheck: nil})
+      assert [%{"type" => "settings", "room" => ""}] = frames(result)
     end
 
     test "are ignored before hello", %{announcer: a} do
@@ -217,16 +319,21 @@ defmodule OpenPairingsNunkiWeb.LinkSocketTest do
       assert %{name: "Hall PC", room: ""} = row(a)
     end
 
-    test "a rename on the page reaches the socket", %{scope: scope, t: t, announcer: a} = ctx do
+    test "a room picked on the page reaches the socket",
+         %{scope: scope, t: t, announcer: a} =
+           ctx do
+      {_t, [_main, annex]} = rooms!(t)
       state = ctx |> welcomed() |> state()
       id = a.id
 
       assert {:ok, %{id: ^id}} =
-               Hall.update_settings(scope, t, a.id, %{"name" => "Desk PC", "room" => "Hall 2"})
+               Hall.update_settings(scope, t, a.id, %{"name" => "Desk PC", "room_id" => annex.id})
 
       assert_receive {:nunki_settings_changed, ^id} = changed
       result = LinkSocket.handle_info(changed, state)
-      assert [%{"type" => "settings", "name" => "Desk PC", "room" => "Hall 2"}] = frames(result)
+      assert [%{"type" => "settings", "name" => "Desk PC", "room" => "Annex"}] = frames(result)
+
+      assert {:error, :room} = Hall.update_settings(scope, t, a.id, %{"room_id" => "nope"})
     end
 
     test "only this tournament's announcers can be changed from its page", %{scope: scope, t: t} do
@@ -240,6 +347,94 @@ defmodule OpenPairingsNunkiWeb.LinkSocketTest do
     test "a removed announcer cannot be changed", %{scope: scope, t: t, announcer: a} do
       :ok = Hall.revoke(scope, t, a.id)
       assert {:error, :not_found} = Hall.update_settings(scope, t, a.id, %{"name" => "Ghost"})
+    end
+  end
+
+  describe "the round, by room" do
+    defp board_labels(result) do
+      [%{"round" => payload}] = Enum.filter(frames(result), &(&1["type"] == "round"))
+      {payload, Enum.map(payload["boards"], & &1["board"])}
+    end
+
+    setup %{t: t} do
+      publish!(t, 1)
+
+      {:ok, t} =
+        PairingsEngine.Tournaments.update_tournament(t, %{
+          "rooms" => [
+            %{"name" => "Main hall", "boards" => "1"},
+            %{"name" => "Annex", "boards" => "2"},
+            %{"name" => "Empty", "boards" => ""}
+          ]
+        })
+
+      %{t: t, rooms: PairingsEngine.Rooms.list(t)}
+    end
+
+    test "no room: every board, and no room key", ctx do
+      {payload, labels} = board_labels(welcomed(ctx))
+      assert length(labels) >= 3
+      refute Map.has_key?(payload, "room")
+    end
+
+    test "a room gets only its boards and says which room",
+         %{announcer: a, rooms: [main | _]} =
+           ctx do
+      Repo.update_all(from(x in Announcer, where: x.id == ^a.id),
+        set: [room: main.name, room_id: main.id]
+      )
+
+      {payload, labels} = board_labels(welcomed(ctx))
+      assert labels == ["1"]
+      assert payload["room"] == "Main hall"
+    end
+
+    test "a room holding no boards gets none", %{announcer: a, rooms: [_, _, empty]} = ctx do
+      Repo.update_all(from(x in Announcer, where: x.id == ^a.id),
+        set: [room: empty.name, room_id: empty.id]
+      )
+
+      {payload, labels} = board_labels(welcomed(ctx))
+      assert labels == []
+      assert payload["room"] == "Empty"
+    end
+
+    test "a room change re-sends the round with a new rev", %{announcer: a} = ctx do
+      state = ctx |> welcomed() |> state()
+      %{last_rev: before} = state
+      id = a.id
+
+      {:ok, state} = settings_in(state, %{room: "Annex"})
+      assert_receive {:nunki_settings_changed, ^id} = changed
+
+      result = LinkSocket.handle_info(changed, state)
+      assert [%{"type" => "settings"}, %{"type" => "round"}] = frames(result)
+      {payload, labels} = board_labels(result)
+      assert labels == ["2"]
+      assert payload["rev"] != before
+
+      # And back to no room: every board again.
+      {:ok, state} = settings_in(state(result), %{room: ""})
+      result = LinkSocket.handle_info({:nunki_settings_changed, id}, state)
+      {payload, labels} = board_labels(result)
+      assert length(labels) >= 3
+      refute Map.has_key?(payload, "room")
+    end
+
+    test "a deleted room means every board again",
+         %{t: t, announcer: a, rooms: [main | _]} =
+           ctx do
+      Repo.update_all(from(x in Announcer, where: x.id == ^a.id),
+        set: [room: main.name, room_id: main.id]
+      )
+
+      state = ctx |> welcomed() |> state()
+      {:ok, _t} = PairingsEngine.Tournaments.update_tournament(t, %{"rooms" => []})
+
+      result = LinkSocket.handle_info(:recheck, %{state | recheck: nil})
+      {payload, labels} = board_labels(result)
+      assert length(labels) >= 3
+      refute Map.has_key?(payload, "room")
     end
   end
 

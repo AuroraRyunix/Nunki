@@ -54,7 +54,7 @@ tried again after 1 second, doubling to 30; after a refusal, 60 seconds.
 |---|---|---|
 | `hello` | `v`, `device`, `key`, `name`, `software` | first, always. The key travels here and nowhere else - not in the address, not in a log |
 | `status` | `voice` (the voice that would speak the tournament's language, a label, or `null`), `speaking` (boolean) | after `welcome`, and whenever either changes |
-| `settings` | `name`, `room` (both optional; an absent key means unchanged) | the operator changed this announcer's name or room on the device. A request, answered by the server's own `settings` frame |
+| `settings` | `name`, `room` (both optional; an absent key means unchanged; `room` is the name of one of the tournament's rooms, or `""` for none) | the operator changed this announcer's name or room on the device. A request, answered by the server's own `settings` frame |
 | `leave` | | the tournament was removed on the device |
 
 ### Server to device
@@ -63,8 +63,8 @@ tried again after 1 second, doubling to 30; after a refusal, 60 seconds.
 |---|---|---|
 | `welcome` | `v`, `server`, `tournament: {id, name}` | the line is up; the name is updated if it changed |
 | `refused` | `reason`: `version`, `key`, `revoked` | `revoked`: forgets the tournament. The others: says so on the control page and tries again in a minute |
-| `settings` | `name`, `room` (strings; `room` may be empty) | this announcer's name and room in this tournament. Stored per tournament and shown on the control page, replacing whatever was shown |
-| `round` | `round`: the payload below | keeps it as the latest round; reads it aloud when its number has not been read before and "Read the pairings when they are published" is on. A changed payload of a round already read is not read again by itself |
+| `settings` | `name`, `room` (strings; `room` may be empty), `rooms_available` (array of room names, may be empty; absent from servers older than rooms), `error` (only `"room"`, see below) | this announcer's name and room in this tournament, and the rooms it may choose from. Stored per tournament and shown on the control page, replacing whatever was shown |
+| `round` | `round`: the payload below (cut to the announcer's room, if it has one) | keeps it as the latest round; reads it aloud when its number has not been read before and "Read the pairings when they are published" is on. A changed payload of a round already read is not read again by itself |
 | `leave` | | removed in OpenPairings while connected: forgets the tournament |
 | `countdown` | `round`, `seconds_left` (integer), `id` | starts a countdown to that round, on the device's own monotonic clock. The same `id` again (after a reconnect) only moves the end; nothing already said is said again |
 | `countdown_cancel` | `id` | cancels that countdown, and only that one |
@@ -94,6 +94,33 @@ is additive: version 1 stays version 1, and a peer that does not know
   made while connected.
 - Changes made on the OpenPairings page reach a connected device at once,
   and one that is off at its next `welcome`.
+
+### Rooms
+
+A tournament may have rooms (OpenPairings: Settings, Rooms), each a name and
+the boards it holds. They are the server's; the device only chooses.
+
+- `rooms_available` lists the names. When it is present, the device offers
+  "No room" and those names; when it is absent (an older server) `room` is
+  free text, as it was before.
+- The device asks for a room by its **name** (`"room": "Annex"`; the server
+  trims and ignores case) or for none (`"room": ""`). The server answers
+  with `settings` carrying the canonical name. A name that is no room of the
+  tournament is **refused**: nothing is changed (the `name` in the same
+  frame included), and the answer is the server's current `settings` frame
+  with `"error": "room"` added. The exception is the exact free text an
+  announcer from before rooms still carries: asking for it again is
+  accepted as no change.
+- A room is kept by id on the server, so renaming it there changes the
+  name the device is told, not the room the announcer stands in. A deleted
+  room means no room.
+- **An announcer in a room is sent only that room's boards.** Its `round`
+  payload lists just the boards the room holds and carries `"room": "<name>"`
+  (only then; with no room the payload is every board and has no `room`
+  key). `rev` is worked out over what is sent, so changing the room sends
+  the round again. A room that holds no boards gets a round with none.
+- A free-text room from before rooms matches no room: it is shown, and
+  that is all it does. It never filters anything.
 
 The server sends `round` after `welcome` (the latest published round, if
 there is one) and whenever its `rev` changes or a newer round is published.

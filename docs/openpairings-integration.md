@@ -27,6 +27,15 @@ beside it. It is not in the tournament's top bar.
 An announcer's name and room are kept in `nunki_announcers` and are the
 truth for both sides; see "Name and room" in `docs/protocol.md`.
 
+The room is one of the tournament's rooms (`PairingsEngine.Rooms`, made in
+the tournament's Settings, Rooms): `room_id` points at it, so a rename there
+follows, and a deleted room is no room. `room` keeps the name, or, for a
+row from before rooms, the free text it was typed as, which stays a label
+and matches no room. The page offers the tournament's rooms in a select.
+An announcer in a room is sent only the boards that room holds (the round
+payload is cut per announcer; `rev` follows what is sent), and the
+`settings` frame lists the room names (`rooms_available`).
+
 The two plugs sit outside every pipeline (`http_routes/0`): no session,
 no CSRF token, no sign-in. The join code (16 characters, 80 random bits,
 fifteen minutes, one use) and then the device's key (32 random bytes,
@@ -42,13 +51,13 @@ topic (`nunki:tournament:<id>`) for what the arbiter presses on the page.
 
 ### Tables
 
-Migrations in `priv/migrations` (`20261018000201`, and `20261018000202` for the room), run with the core's
+Migrations in `priv/migrations` (`20261018000201`, `20261018000202` for the room, `20261018000203` for `room_id`), run with the core's
 (`migrations_path/0`; the hosted `mix ecto.migrate` alias and the
 application's own start-up migrator both pick them up):
 
 | Table              | What                                                                        |
 |--------------------|-----------------------------------------------------------------------------|
-| `nunki_announcers` | one joined device per tournament: device id, name, room, key hash, status, online |
+| `nunki_announcers` | one joined device per tournament: device id, name, room, room id, key hash, status, online |
 | `nunki_join_codes` | one-time codes, as their hash, with expiry and use                          |
 | `nunki_countdowns` | the running round countdown per tournament (round, ends_at, id)             |
 

@@ -76,4 +76,22 @@ defmodule OpenPairingsNunki.RoundPayloadTest do
     assert RoundPayload.spoken("Magnus Carlsen") == "Magnus Carlsen"
     assert RoundPayload.spoken("Carlsen,") == "Carlsen"
   end
+
+  test "for_room cuts to the room's boards, names it and moves the rev", %{t: t} do
+    publish!(t, 1)
+    p = RoundPayload.latest(t.id)
+    room = %{name: "Annex", ranges: [{2, 2}]}
+
+    assert RoundPayload.for_room(p, nil) == p
+    assert RoundPayload.for_room(nil, room) == nil
+
+    cut = RoundPayload.for_room(p, room)
+    assert Enum.map(cut["boards"], & &1["board"]) == ["2"]
+    assert cut["room"] == "Annex"
+    assert cut["rev"] != p["rev"]
+    assert cut["rev"] == RoundPayload.rev(cut)
+
+    # A room holding nothing holds no boards.
+    assert RoundPayload.for_room(p, %{name: "Empty", ranges: []})["boards"] == []
+  end
 end

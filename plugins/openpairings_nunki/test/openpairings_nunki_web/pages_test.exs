@@ -6,11 +6,12 @@ defmodule OpenPairingsNunkiWeb.PagesTest do
   """
   use PairingsEngineWeb.ConnCase, async: false
 
+  import Ecto.Query
   import Phoenix.LiveViewTest
   import OpenPairingsNunki.Fixtures
 
   alias OpenPairingsNunki.{Announcer, Hall, Plugin}
-  alias PairingsEngine.{Features, Repo}
+  alias PairingsEngine.{Features, Repo, Tournaments}
   alias PairingsEngine.Accounts.Scope
 
   setup :register_and_log_in_user
@@ -59,28 +60,80 @@ defmodule OpenPairingsNunkiWeb.PagesTest do
       assert has_element?(view, "#nunki-announcers")
     end
 
-    test "shows an announcer's room and renames it", %{conn: conn, scope: scope, t: t} do
+    test "with no rooms, offers only 'No room' and says where rooms are made",
+         %{conn: conn, scope: scope, t: t} do
+      {a, _key} = announcer!(scope, t)
+      view = page(conn, t)
+
+      assert has_element?(view, "#announcers-#{a.id}-no-rooms")
+      assert has_element?(view, "#nunki-settings-#{a.id} select option", "No room")
+      refute has_element?(view, "#nunki-settings-#{a.id} select option", "Main hall")
+    end
+
+    test "picks a room from the tournament's rooms and renames the announcer",
+         %{conn: conn, scope: scope, t: t} do
+      {:ok, t} =
+        Tournaments.update_tournament(t, %{
+          "rooms" => [%{"name" => "Main hall", "boards" => "1-2"}]
+        })
+
+      [room] = PairingsEngine.Rooms.list(t)
       {a, _key} = announcer!(scope, t)
       Hall.subscribe(t.id)
       view = page(conn, t)
       refute has_element?(view, "#announcers-#{a.id}-room")
+      refute has_element?(view, "#announcers-#{a.id}-no-rooms")
 
       view
-      |> form("#nunki-settings-#{a.id}", announcer: %{name: "Door PC", room: "Foyer"})
+      |> form("#nunki-settings-#{a.id}", announcer: %{name: "Door PC", room_id: room.id})
       |> render_submit()
 
       id = a.id
       assert_receive {:nunki_settings_changed, ^id}
       assert has_element?(view, "#announcers-#{a.id}-name", "Door PC")
-      assert has_element?(view, "#announcers-#{a.id}-room", "Foyer")
-      assert %{name: "Door PC", room: "Foyer"} = Repo.get!(Announcer, a.id)
+      assert has_element?(view, "#announcers-#{a.id}-room", "Main hall")
+      assert %{name: "Door PC", room: "Main hall", room_id: rid} = Repo.get!(Announcer, a.id)
+      assert rid == room.id
+
+      # And back to none.
+      view
+      |> form("#nunki-settings-#{a.id}", announcer: %{room_id: ""})
+      |> render_submit()
+
+      refute has_element?(view, "#announcers-#{a.id}-room")
     end
 
-    test "a change from the device shows up on the page", %{conn: conn, scope: scope, t: t} do
+    test "an unknown room id is refused", %{conn: conn, scope: scope, t: t} do
       {a, _key} = announcer!(scope, t)
       view = page(conn, t)
 
-      Hall.apply_settings(a, %{"room" => "Back room"})
+      render_submit(view, "save_settings", %{
+        "announcer" => %{"id" => "#{a.id}", "room_id" => "nope"}
+      })
+
+      assert has_element?(view, "#nunki-error")
+      assert Repo.get!(Announcer, a.id).room_id == ""
+    end
+
+    test "a legacy free-text room shows as a hint, not a choice",
+         %{conn: conn, scope: scope, t: t} do
+      {a, _key} = announcer!(scope, t)
+      Repo.update_all(from(x in Announcer, where: x.id == ^a.id), set: [room: "Back room"])
+      view = page(conn, t)
+
+      assert has_element?(view, "#announcers-#{a.id}-room", "Back room")
+      assert has_element?(view, "#announcers-#{a.id}-legacy-room", "Back room")
+      refute has_element?(view, "#nunki-settings-#{a.id} select option", "Back room")
+    end
+
+    test "a change from the device shows up on the page", %{conn: conn, scope: scope, t: t} do
+      {:ok, t} =
+        Tournaments.update_tournament(t, %{"rooms" => [%{"name" => "Back room", "boards" => "1"}]})
+
+      {a, _key} = announcer!(scope, t)
+      view = page(conn, t)
+
+      {:ok, _} = Hall.apply_settings(a, %{"room" => "back ROOM"})
       assert render(view) =~ "Back room"
       assert has_element?(view, "#announcers-#{a.id}-room", "Back room")
     end

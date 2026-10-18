@@ -224,6 +224,11 @@ msgstr "Nog geen indeling ontvangen."
 msgid "No pairings to read yet."
 msgstr "Nog geen indeling om voor te lezen."
 
+#: lib/nunki_web/live/control_live.ex
+#, elixir-autogen, elixir-format
+msgid "No room"
+msgstr "Geen ruimte"
+
 #: lib/nunki_web/live/control_live.ex:226
 #, elixir-autogen, elixir-format
 msgid "No pairings yet: nothing to count down to."
@@ -401,6 +406,11 @@ msgstr "Die link is al gebruikt of verlopen. Maak een nieuwe in OpenPairings."
 #, elixir-autogen, elixir-format
 msgid "That link is for %{product}, not for Nunki. Ask OpenPairings for an announcer link."
 msgstr "Die link is voor %{product}, niet voor Nunki. Vraag in OpenPairings een link voor een omroeper."
+
+#: lib/nunki_web/live/control_live.ex
+#, elixir-autogen, elixir-format
+msgid "That room is not one of this tournament's rooms."
+msgstr "Die ruimte hoort niet bij de ruimtes van dit toernooi."
 
 #: lib/nunki_web/words.ex:38
 #, elixir-autogen, elixir-format

@@ -75,6 +75,24 @@ defmodule OpenPairingsNunki.RoundPayload do
     Map.put(payload, "rev", rev(payload))
   end
 
+  @doc """
+  The payload as an announcer in `room` (a `PairingsEngine.Rooms` room, or
+  nil) gets it: only the boards that room holds, and a `"room"` key with
+  its name, with the `rev` worked out again. No room, no change. A nil
+  payload stays nil.
+  """
+  def for_room(nil, _room), do: nil
+  def for_room(payload, nil), do: payload
+
+  def for_room(payload, room) do
+    payload
+    |> Map.update!("boards", fn boards ->
+      Enum.filter(boards, &PairingsEngine.Rooms.holds?(room, &1["board"]))
+    end)
+    |> Map.put("room", room.name)
+    |> then(&Map.put(&1, "rev", rev(&1)))
+  end
+
   @doc "The payload's revision: hex SHA-256 of its canonical JSON."
   def rev(payload) do
     payload

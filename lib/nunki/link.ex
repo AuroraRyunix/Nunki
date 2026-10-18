@@ -291,19 +291,32 @@ defmodule Nunki.Link do
     |> send_status()
   end
 
-  # The server's word on this device's name and room. Kept as it comes
-  # (cut to the server's own 60 characters, should it ever send more).
+  # The server's word on this device's name and room, and the rooms the
+  # tournament has (`rooms_available`, names; an older server sends none,
+  # and then the room is free text). Kept as it comes (cut to the server's
+  # own 60 characters, should it ever send more). `"error": "room"` means
+  # the room asked for was refused: the frame is the server's own state all
+  # the same, and the page is told so it can say it.
   defp message(%{"type" => "settings"} = settings, state) do
     Store.update_tournament(state.tournament, fn t ->
       current = t["announcer"] || %{}
 
-      put_in(t, ["announcer"], %{
+      announcer = %{
         "name" => text(settings["name"], current["name"]),
         "room" => text(settings["room"], current["room"])
-      })
+      }
+
+      announcer =
+        case rooms_available(settings["rooms_available"]) do
+          nil -> announcer
+          names -> Map.put(announcer, "rooms_available", names)
+        end
+
+      put_in(t, ["announcer"], announcer)
     end)
 
     Nunki.broadcast({:link, state.tournament})
+    if settings["error"] == "room", do: Nunki.broadcast({:room_refused, state.tournament})
     state
   end
 
@@ -375,6 +388,12 @@ defmodule Nunki.Link do
   catch
     :exit, _reason -> %{"voice" => nil, "speaking" => false}
   end
+
+  defp rooms_available(names) when is_list(names) do
+    for name <- names, is_binary(name), do: String.slice(name, 0, 60)
+  end
+
+  defp rooms_available(_absent), do: nil
 
   defp text(value, _current) when is_binary(value), do: String.slice(value, 0, 60)
   defp text(_value, current), do: current || ""
