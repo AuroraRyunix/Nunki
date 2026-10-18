@@ -8,6 +8,10 @@ defmodule OpenPairingsNunkiWeb.LinkSocket do
   else is listened to, and a link that says nothing for ten seconds is
   closed. After `welcome` the socket:
 
+    * sends `settings` (the announcer's name and room, which live here and
+      nowhere else), and again whenever either changes, from the tournament
+      page or from the device's own `settings` frame, but never the same
+      pair twice in a row;
     * sends the latest published round (`round`), if there is one, and the
       running countdown with the seconds that are left of it, if one runs;
     * listens on the core's tournament topic, and on any change looks again
@@ -32,7 +36,8 @@ defmodule OpenPairingsNunkiWeb.LinkSocket do
   @debounce_ms 300
 
   @doc false
-  def new_state, do: %{announcer: nil, last_round: 0, last_rev: nil, recheck: nil}
+  def new_state,
+    do: %{announcer: nil, last_round: 0, last_rev: nil, recheck: nil, last_settings: nil}
 
   @impl true
   def init(_args) do
@@ -78,6 +83,15 @@ defmodule OpenPairingsNunkiWeb.LinkSocket do
     {:ok, %{state | announcer: Hall.put_status(state.announcer, status)}}
   end
 
+  # The device asks to change its name and/or room. A request, not an
+  # order: the row decides, and the answer is the `settings` frame the
+  # change brings back over the plugin's topic.
+  defp frame(%{"type" => "settings"} = frame, state) do
+    announcer = Hall.get_announcer(state.announcer.id) || state.announcer
+    Hall.apply_settings(announcer, Map.take(frame, ["name", "room"]))
+    {:ok, %{state | announcer: Hall.touch(announcer)}}
+  end
+
   # The tournament was removed on the device: removed here too.
   defp frame(%{"type" => "leave"}, state) do
     Hall.forget(state.announcer)
@@ -107,7 +121,12 @@ defmodule OpenPairingsNunkiWeb.LinkSocket do
         cd -> [Hall.countdown_frame(cd)]
       end
 
-    frames = [Protocol.welcome(Hall.server_name(), tournament) | round_frames] ++ countdown_frames
+    {settings_frames, state} = settings_frames(state)
+
+    frames =
+      [Protocol.welcome(Hall.server_name(), tournament) | settings_frames] ++
+        round_frames ++ countdown_frames
+
     {:push, Enum.map(frames, &text/1), state}
   end
 
@@ -138,6 +157,13 @@ defmodule OpenPairingsNunkiWeb.LinkSocket do
   def handle_info({:nunki_send, frame}, %{announcer: %{}} = state),
     do: {:push, text(frame), state}
 
+  def handle_info({:nunki_settings_changed, id}, %{announcer: %{id: id}} = state) do
+    case settings_frames(state) do
+      {[], state} -> {:ok, state}
+      {frames, state} -> {:push, Enum.map(frames, &text/1), state}
+    end
+  end
+
   def handle_info({:nunki_revoked, id}, %{announcer: %{id: id}} = state),
     do: {:stop, :normal, 1000, [text(Protocol.leave())], %{state | announcer: nil}}
 
@@ -158,6 +184,22 @@ defmodule OpenPairingsNunkiWeb.LinkSocket do
   def terminate(_reason, _state), do: :ok
 
   ## ---------- helpers ----------
+
+  # The settings frame to send now: the row as it is in the database, unless
+  # the last one sent here said the same.
+  defp settings_frames(state) do
+    case Hall.get_announcer(state.announcer.id) do
+      nil ->
+        {[], state}
+
+      row ->
+        frame = Protocol.settings(row.name, row.room)
+
+        if frame == state.last_settings,
+          do: {[], state},
+          else: {[frame], %{state | announcer: row, last_settings: frame}}
+    end
+  end
 
   # The round frame to send now, if the latest published round is newer
   # than, or different from, the last one this socket sent.

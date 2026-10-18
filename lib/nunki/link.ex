@@ -4,14 +4,19 @@ defmodule Nunki.Link do
   (`Mint.WebSocket`), kept up. Hall devices always dial out, so nobody
   forwards a port anywhere.
 
-  1. Connect, say `hello` with the key. The server says `welcome`, and
-     then `round` with the latest published round, if there is one.
+  1. Connect, say `hello` with the key. The server says `welcome`, then
+     `settings` (this device's name and room in the tournament), and then
+     `round` with the latest published round, if there is one.
   2. Say `status` (the voice, whether it is speaking) after the welcome and
      whenever either changes.
   3. Listen: `round` goes to `Nunki.Announcer`, `countdown` and
      `countdown_cancel` to `Nunki.Countdown`, `read` and `stop` to the
      announcer and the speaker.
-  4. The line goes: try again after a second, then two, up to thirty.
+  4. `settings` is kept as the server says it: the server is the truth, so
+     a change made here (`send_settings/2`) is only a request, shown once
+     the server's `settings` frame comes back. With the line down there is
+     nobody to ask, and the answer is `{:error, :down}`.
+  5. The line goes: try again after a second, then two, up to thirty.
 
   A ping every 25 seconds keeps a tunnel from deciding the line is idle,
   and a line that has said nothing for 75 is taken for dead.
@@ -63,6 +68,21 @@ defmodule Nunki.Link do
     :exit, _reason -> %{up?: false, error: nil}
   end
 
+  @doc """
+  Asks the server to change this device's name and/or room in the
+  tournament: `attrs` holds `"name"` and/or `"room"`. `:ok` once the frame
+  is on the line, `{:error, :down}` when there is no line to send it on.
+  Nothing is stored here: the server's answer is.
+  """
+  def send_settings(tournament, attrs) do
+    case whereis(tournament) do
+      nil -> {:error, :down}
+      pid -> GenServer.call(pid, {:settings, attrs})
+    end
+  catch
+    :exit, _reason -> {:error, :down}
+  end
+
   @doc "Tells the server this device is leaving the tournament, if the line is up."
   def leave(pid) do
     GenServer.call(pid, :leave)
@@ -97,6 +117,13 @@ defmodule Nunki.Link do
 
   @impl true
   def handle_call(:info, _from, state), do: {:reply, %{up?: state.up?, error: state.error}, state}
+
+  def handle_call({:settings, attrs}, _from, %{up?: true} = state) do
+    frame = attrs |> Map.take(["name", "room"]) |> Map.put("type", "settings")
+    {:reply, :ok, push(state, frame)}
+  end
+
+  def handle_call({:settings, _attrs}, _from, state), do: {:reply, {:error, :down}, state}
 
   def handle_call(:leave, _from, %{up?: true} = state) do
     state = push(state, %{"type" => "leave"})
@@ -264,6 +291,22 @@ defmodule Nunki.Link do
     |> send_status()
   end
 
+  # The server's word on this device's name and room. Kept as it comes
+  # (cut to the server's own 60 characters, should it ever send more).
+  defp message(%{"type" => "settings"} = settings, state) do
+    Store.update_tournament(state.tournament, fn t ->
+      current = t["announcer"] || %{}
+
+      put_in(t, ["announcer"], %{
+        "name" => text(settings["name"], current["name"]),
+        "room" => text(settings["room"], current["room"])
+      })
+    end)
+
+    Nunki.broadcast({:link, state.tournament})
+    state
+  end
+
   defp message(%{"type" => "round", "round" => %{} = payload}, state) do
     Announcer.round_received(state.tournament, payload)
     state
@@ -332,6 +375,9 @@ defmodule Nunki.Link do
   catch
     :exit, _reason -> %{"voice" => nil, "speaking" => false}
   end
+
+  defp text(value, _current) when is_binary(value), do: String.slice(value, 0, 60)
+  defp text(_value, current), do: current || ""
 
   defp push(state, frame), do: send_frame(state, {:text, Jason.encode!(frame)})
 

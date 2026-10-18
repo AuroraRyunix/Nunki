@@ -2,8 +2,8 @@ defmodule Nunki.Join do
   @moduledoc """
   Joining a tournament: the whole of it is one link.
 
-  OpenPairings' "Add an announcer" (on the tournament's Hall announcer
-  page) shows `https://<server>/p/nunki/join/<code>`, as text and as a QR
+  OpenPairings' "Add an announcer" (the tournament's Settings, Hall
+  announcer) shows `https://<server>/p/nunki/join/<code>`, as text and as a QR
   code, good for fifteen minutes and for one device. The operator pastes it
   into the control page and presses Join; Nunki POSTs to that very address
   who it is, and the answer is its own long key, where the link's socket

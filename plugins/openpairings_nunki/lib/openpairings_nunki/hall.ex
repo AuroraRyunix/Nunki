@@ -14,6 +14,9 @@ defmodule OpenPairingsNunki.Hall do
       socket says `leave` and hangs up.
     * `{:nunki_superseded, announcer_id, pid}` - the same announcer
       connected again; the older socket is the stale one.
+    * `{:nunki_settings_changed, announcer_id}` - that announcer's name or
+      room changed (on the page or from the device); its socket reloads
+      the row and tells the device.
     * `{:nunki_changed, tournament_id}` - something the page shows changed
       (an announcer connected, reported, left; a countdown started).
 
@@ -33,6 +36,7 @@ defmodule OpenPairingsNunki.Hall do
   @code_ttl_seconds 15 * 60
   @online_seconds 90
   @countdown_minutes [1, 2, 5, 10, 15]
+  @name_max 60
 
   @doc "The minutes a countdown may run for, as the page offers them."
   def countdown_minutes, do: @countdown_minutes
@@ -144,7 +148,7 @@ defmodule OpenPairingsNunki.Hall do
 
   defp register(t, attrs, key, now) do
     fields = %{
-      name: clip(attrs["name"], 100),
+      name: clip(attrs["name"], @name_max),
       software: clip(attrs["software"], 100),
       key_hash: sha256(key),
       status: %{},
@@ -215,6 +219,54 @@ defmodule OpenPairingsNunki.Hall do
   end
 
   def authenticate(_device_id, _key), do: {:error, :key}
+
+  @doc "The announcer row with `id`, or nil (gone, or never was)."
+  def get_announcer(id), do: Repo.get(Announcer, id)
+
+  @doc """
+  The arbiter renames an announcer or sets its room from the tournament
+  page. `attrs` holds `"name"` and/or `"room"`; an absent key stays as it
+  is. `{:ok, announcer}`, or `{:error, :not_found}` for an announcer that is
+  not (or no longer) this tournament's. See `apply_settings/2` for the rules.
+  """
+  def update_settings(%Scope{} = scope, %Tournament{} = tournament, announcer_id, attrs) do
+    tournament = authorize!(scope, tournament)
+
+    case Repo.get_by(Announcer, id: announcer_id, tournament_id: tournament.id) do
+      %Announcer{revoked_at: nil} = a -> {:ok, apply_settings(a, attrs)}
+      _gone -> {:error, :not_found}
+    end
+  end
+
+  @doc """
+  Stores a name and/or room for `announcer` and, when that changed
+  anything, tells the tournament's pages and the announcer's own socket.
+  This is the one door for both sides: the server is the truth, so what
+  the device asks for is only ever a request.
+
+  Both are trimmed and cut to 60 characters. An absent key stays as it is,
+  and so does the name when the new one comes out empty; a room may be
+  emptied. Returns the announcer as stored.
+  """
+  def apply_settings(%Announcer{} = a, attrs) when is_map(attrs) do
+    name = if is_binary(attrs["name"]), do: clip(attrs["name"], @name_max), else: ""
+    room = if is_binary(attrs["room"]), do: clip(attrs["room"], @name_max), else: a.room
+
+    changes =
+      %{name: if(name == "", do: a.name, else: name), room: room}
+      |> Enum.reject(fn {key, value} -> Map.fetch!(a, key) == value end)
+
+    if changes == [] do
+      a
+    else
+      Repo.update_all(from(x in Announcer, where: x.id == ^a.id), set: changes)
+      broadcast(a.tournament_id, {:nunki_settings_changed, a.id})
+      notify(a.tournament_id)
+      struct(a, changes)
+    end
+  end
+
+  def apply_settings(%Announcer{} = a, _attrs), do: a
 
   @doc "Marks the announcer connected, seen now."
   def connected(%Announcer{} = a), do: update_live(a, connected: true, last_seen_at: now())

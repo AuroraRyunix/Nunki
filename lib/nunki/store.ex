@@ -7,6 +7,7 @@ defmodule Nunki.Store do
        "device_id": "...", "device_name": "hall-pc",
        "tournaments": {"<local id>": {"id", "server", "socket", "key",
                                       "tournament": {"id", "name"},
+                                      "announcer": {"name", "room"},
                                       "round": <the last round payload>,
                                       "announced": 3, "joined_at": "..."}},
        "settings": {"language": "follow", "voices": {"nl": "..."},
@@ -16,6 +17,10 @@ defmodule Nunki.Store do
   private (0600), then renamed over the old one. A machine that loses power
   mid-write has the old file or the new one, never half of each. It changes
   a few times a round; it can afford to be written whole.
+
+  `"announcer"` is this device's name and room *in that tournament*, as the
+  server last said them (`settings` frame). The server is the truth: the
+  device asks for a change over the line and keeps what the server answers.
 
   The key of each tournament is in the file and nowhere else: `tournaments/0`
   and `tournament/1` leave it out, so a page cannot show what it was never

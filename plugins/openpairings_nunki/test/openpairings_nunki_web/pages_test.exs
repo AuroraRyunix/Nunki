@@ -1,6 +1,6 @@
 defmodule OpenPairingsNunkiWeb.PagesTest do
   @moduledoc """
-  The plugin's two pages and its menu entry: adding an announcer shows a
+  The plugin's two pages and its Settings entry: adding an announcer shows a
   link and a QR code, removing one tells it, and the round-start controls
   reach every announcer of the tournament.
   """
@@ -9,8 +9,8 @@ defmodule OpenPairingsNunkiWeb.PagesTest do
   import Phoenix.LiveViewTest
   import OpenPairingsNunki.Fixtures
 
-  alias OpenPairingsNunki.{Hall, Plugin}
-  alias PairingsEngine.Features
+  alias OpenPairingsNunki.{Announcer, Hall, Plugin}
+  alias PairingsEngine.{Features, Repo}
   alias PairingsEngine.Accounts.Scope
 
   setup :register_and_log_in_user
@@ -25,13 +25,25 @@ defmodule OpenPairingsNunkiWeb.PagesTest do
     view
   end
 
-  describe "the menu" do
-    test "has the entry with the feature on, and not without", %{scope: scope, user: user, t: t} do
-      assert [%{id: "nunki", path: path}] = Plugin.tournament_menu_entries(scope, t)
+  describe "the Settings entry" do
+    test "is there with the feature on, and not without", %{scope: scope, user: user, t: t} do
+      assert [%{id: "nunki", path: path, icon: icon, group: :publishing}] =
+               Plugin.tournament_settings_entries(scope, t)
+
       assert path == "/p/nunki/tournaments/#{t.id}"
+      assert icon == "hero-megaphone-micro"
 
       {:ok, user} = Features.set_enabled(user, [])
-      assert Plugin.tournament_menu_entries(Scope.for_user(user), t) == []
+      assert Plugin.tournament_settings_entries(Scope.for_user(user), t) == []
+    end
+
+    test "the top bar no longer has one", %{scope: scope, t: t} do
+      refute function_exported?(Plugin, :tournament_menu_entries, 2)
+
+      refute Enum.any?(
+               PairingsEngine.Plugins.tournament_menu_entries(scope, t),
+               &(&1.id == "nunki")
+             )
     end
 
     test "the feature is a general one" do
@@ -40,6 +52,56 @@ defmodule OpenPairingsNunkiWeb.PagesTest do
   end
 
   describe "the tournament page" do
+    test "sits in the Settings frame, with the rail beside it", %{conn: conn, t: t} do
+      view = page(conn, t)
+      assert has_element?(view, "#settings-page")
+      assert has_element?(view, "#settings-nav-plugin-nunki")
+      assert has_element?(view, "#nunki-announcers")
+    end
+
+    test "shows an announcer's room and renames it", %{conn: conn, scope: scope, t: t} do
+      {a, _key} = announcer!(scope, t)
+      Hall.subscribe(t.id)
+      view = page(conn, t)
+      refute has_element?(view, "#announcers-#{a.id}-room")
+
+      view
+      |> form("#nunki-settings-#{a.id}", announcer: %{name: "Door PC", room: "Foyer"})
+      |> render_submit()
+
+      id = a.id
+      assert_receive {:nunki_settings_changed, ^id}
+      assert has_element?(view, "#announcers-#{a.id}-name", "Door PC")
+      assert has_element?(view, "#announcers-#{a.id}-room", "Foyer")
+      assert %{name: "Door PC", room: "Foyer"} = Repo.get!(Announcer, a.id)
+    end
+
+    test "a change from the device shows up on the page", %{conn: conn, scope: scope, t: t} do
+      {a, _key} = announcer!(scope, t)
+      view = page(conn, t)
+
+      Hall.apply_settings(a, %{"room" => "Back room"})
+      assert render(view) =~ "Back room"
+      assert has_element?(view, "#announcers-#{a.id}-room", "Back room")
+    end
+
+    test "another tournament's announcer cannot be renamed here", %{
+      conn: conn,
+      scope: scope,
+      t: t
+    } do
+      other = tournament!(scope, %{"name" => "Another Open"})
+      {b, _key} = announcer!(scope, other, "device-2")
+      view = page(conn, t)
+
+      render_submit(view, "save_settings", %{
+        "announcer" => %{"id" => "#{b.id}", "name" => "Hijack"}
+      })
+
+      assert has_element?(view, "#nunki-error")
+      assert Repo.get!(Announcer, b.id).name == "Hall PC"
+    end
+
     test "adding an announcer shows a link and a QR code", %{conn: conn, t: t} do
       view = page(conn, t)
       refute has_element?(view, "#nunki-join")
@@ -119,6 +181,14 @@ defmodule OpenPairingsNunkiWeb.PagesTest do
       assert has_element?(view, "#nunki-not-enabled")
       render_click(view, "read", %{})
       refute_received {:nunki_send, _}
+
+      {a, _key} = announcer!(Scope.for_user(user), t)
+
+      render_submit(view, "save_settings", %{
+        "announcer" => %{"id" => "#{a.id}", "name" => "Nope"}
+      })
+
+      assert Repo.get!(Announcer, a.id).name == "Hall PC"
     end
   end
 

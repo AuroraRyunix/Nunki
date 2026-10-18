@@ -59,6 +59,68 @@ defmodule NunkiWeb.ControlLiveTest do
     assert Store.tournaments() == []
   end
 
+  describe "name and room" do
+    test "with the line down the fields are disabled, and asking is refused" do
+      id = tournament()
+      {:ok, view, _html} = live(build_conn(), "/")
+      row = "#tournaments-#{id}"
+
+      assert has_element?(view, "#{row}-settings input[name='announcer[name]'][disabled]")
+      assert has_element?(view, "#{row}-settings input[name='announcer[room]'][disabled]")
+      assert has_element?(view, "#{row}-settings-down")
+
+      html =
+        render_submit(view, "announcer_save", %{
+          "announcer" => %{"tournament" => id, "name" => "x", "room" => "y"}
+        })
+
+      assert html =~ "line is down"
+    end
+
+    test "with the line up: sent on save, and shown only when the server answers" do
+      server = FakeServer.start()
+
+      FakeServer.set(server, :on_welcome, [
+        %{"type" => "settings", "name" => "Hall PC", "room" => "Main hall"}
+      ])
+
+      {:ok, id} = Nunki.Tournaments.join(FakeServer.link(server))
+      eventually(fn -> Nunki.Link.info(id).up? end)
+      eventually(fn -> Store.tournament(id)["announcer"] end)
+
+      {:ok, view, _html} = live(build_conn(), "/")
+      row = "#tournaments-#{id}"
+
+      refute has_element?(view, "#{row}-settings input[disabled]")
+      refute has_element?(view, "#{row}-settings-down")
+
+      assert has_element?(
+               view,
+               "#{row}-settings input[name='announcer[room]'][value='Main hall']"
+             )
+
+      view
+      |> form("#{row}-settings", announcer: %{name: "Side PC", room: "Side hall"})
+      |> render_submit()
+
+      eventually(fn -> FakeServer.frames(server, "settings") != [] end)
+
+      assert [%{"name" => "Side PC", "room" => "Side hall"}] =
+               FakeServer.frames(server, "settings")
+
+      assert has_element?(
+               view,
+               "#{row}-settings input[name='announcer[room]'][value='Main hall']"
+             )
+
+      FakeServer.push(server, %{"type" => "settings", "name" => "Side PC", "room" => "Side hall"})
+
+      eventually(fn ->
+        has_element?(view, "#{row}-settings input[name='announcer[room]'][value='Side hall']")
+      end)
+    end
+  end
+
   test "a joined tournament: its line, its round, Read now, a countdown, Remove" do
     id = tournament(payload(3))
     {:ok, view, _html} = live(build_conn(), "/")

@@ -113,7 +113,7 @@ defmodule NunkiWeb.CoreComponents do
   attr :hint, :string, default: nil
 
   attr :rest, :global,
-    include: ~w(autocomplete disabled placeholder required inputmode spellcheck)
+    include: ~w(autocomplete disabled maxlength placeholder required inputmode spellcheck)
 
   def input(%{field: %Phoenix.HTML.FormField{} = field} = assigns) do
     assigns
@@ -121,6 +121,12 @@ defmodule NunkiWeb.CoreComponents do
     |> assign_new(:name, fn -> field.name end)
     |> assign_new(:value, fn -> field.value end)
     |> input()
+  end
+
+  def input(%{type: "hidden"} = assigns) do
+    ~H"""
+    <input type="hidden" id={@id} name={@name} value={@value} />
+    """
   end
 
   def input(%{type: "checkbox"} = assigns) do

@@ -10,7 +10,7 @@ opened, forwarded or known in advance.
 
 ## Joining: one link, one step
 
-In OpenPairings, a tournament's *Hall announcer* page, "Add an announcer"
+In OpenPairings, a tournament's Settings → *Hall announcer*, "Add an announcer"
 makes a join code: random, at least ten characters, valid fifteen minutes,
 good once, bound to that tournament. It is shown as a link and a QR code:
 
@@ -54,6 +54,7 @@ tried again after 1 second, doubling to 30; after a refusal, 60 seconds.
 |---|---|---|
 | `hello` | `v`, `device`, `key`, `name`, `software` | first, always. The key travels here and nowhere else - not in the address, not in a log |
 | `status` | `voice` (the voice that would speak the tournament's language, a label, or `null`), `speaking` (boolean) | after `welcome`, and whenever either changes |
+| `settings` | `name`, `room` (both optional; an absent key means unchanged) | the operator changed this announcer's name or room on the device. A request, answered by the server's own `settings` frame |
 | `leave` | | the tournament was removed on the device |
 
 ### Server to device
@@ -62,12 +63,37 @@ tried again after 1 second, doubling to 30; after a refusal, 60 seconds.
 |---|---|---|
 | `welcome` | `v`, `server`, `tournament: {id, name}` | the line is up; the name is updated if it changed |
 | `refused` | `reason`: `version`, `key`, `revoked` | `revoked`: forgets the tournament. The others: says so on the control page and tries again in a minute |
+| `settings` | `name`, `room` (strings; `room` may be empty) | this announcer's name and room in this tournament. Stored per tournament and shown on the control page, replacing whatever was shown |
 | `round` | `round`: the payload below | keeps it as the latest round; reads it aloud when its number has not been read before and "Read the pairings when they are published" is on. A changed payload of a round already read is not read again by itself |
 | `leave` | | removed in OpenPairings while connected: forgets the tournament |
 | `countdown` | `round`, `seconds_left` (integer), `id` | starts a countdown to that round, on the device's own monotonic clock. The same `id` again (after a reconnect) only moves the end; nothing already said is said again |
 | `countdown_cancel` | `id` | cancels that countdown, and only that one |
 | `read` | `round` | reads that round's pairings now (the latest held; another round is not known to the device) |
 | `stop` | | stops speaking now and forgets the queue |
+
+### Name and room: the server is the truth
+
+Each announcer has a `name` and a `room` (empty when the hall has only the
+one) per tournament. They live in OpenPairings and nowhere else; the device
+holds a copy for display. That is why the frame goes both ways, and why it
+is additive: version 1 stays version 1, and a peer that does not know
+`settings` ignores it, like any frame of a type it does not know.
+
+- The server sends `settings` right after `welcome`, before the `round`
+  frame, and again whenever the stored name or room change, whichever side
+  changed them (the operator on the OpenPairings page, or the device). It
+  does not send the same pair twice in a row.
+- The device sends `settings` to ask for a change. Absent keys stay as they
+  are. The server trims, cuts `name` and `room` to 60 characters, keeps the
+  current name if the new one is empty, and lets `room` be emptied. Before
+  `hello` it is ignored, like every other frame.
+- The device does not show what it asked for; it shows what the server
+  answers. A request the server turned into no change (an empty name) is
+  answered by nothing, and the old value stays. With the line down there is
+  nothing to ask, so the control page disables the fields; the change is
+  made while connected.
+- Changes made on the OpenPairings page reach a connected device at once,
+  and one that is off at its next `welcome`.
 
 The server sends `round` after `welcome` (the latest published round, if
 there is one) and whenever its `rev` changes or a newer round is published.

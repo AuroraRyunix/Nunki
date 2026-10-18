@@ -60,10 +60,22 @@ defmodule OpenPairingsNunki.Plugin do
     ]
   end
 
+  # The announcer is set up per tournament and then left alone, which is
+  # what the Settings rail is for; the top bar is for what is used every day.
+  # The icon is one the core's own source already uses (the stylesheet only
+  # builds those), and a megaphone was already in.
   @impl true
-  def tournament_menu_entries(scope, %Tournament{} = t) do
+  def tournament_settings_entries(scope, %Tournament{} = t) do
     if Features.enabled?(scope, @feature) do
-      [%{id: "nunki", label: gettext("Hall announcer"), path: "/p/nunki/tournaments/#{t.id}"}]
+      [
+        %{
+          id: "nunki",
+          label: gettext("Hall announcer"),
+          path: "/p/nunki/tournaments/#{t.id}",
+          icon: "hero-megaphone-micro",
+          group: :publishing
+        }
+      ]
     else
       []
     end
@@ -81,7 +93,7 @@ defmodule OpenPairingsNunki.Plugin do
         label: gettext("Hall announcer (Nunki)"),
         description:
           gettext(
-            "Adds \"Hall announcer\" to a tournament's menu: join a hall PC running Nunki, and it reads each round's pairings aloud and shows the countdown to the start of the round."
+            "Adds \"Hall announcer\" to a tournament's Settings: join a hall PC running Nunki, and it reads each round's pairings aloud and shows the countdown to the start of the round."
           )
       }
     ]

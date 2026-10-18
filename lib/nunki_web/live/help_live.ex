@@ -42,7 +42,7 @@ defmodule NunkiWeb.HelpLive do
           <h2>Een toernooi koppelen</h2>
           <ol>
             <li>
-              Open in OpenPairings het toernooi, de pagina Omroeper, en druk op "Omroeper toevoegen".
+              In OpenPairings: de instellingen van het toernooi → Omroeper → "Omroeper toevoegen".
             </li>
             <li>
               Kopieer de link en plak hem op deze pagina in "Bij een toernooi aansluiten". Druk op Aansluiten.
@@ -51,6 +51,9 @@ defmodule NunkiWeb.HelpLive do
           </ol>
           <p>
             De link werkt één keer en vijftien minuten lang. Verlopen? Maak een nieuwe. Een link voor een printstation (Polis) werkt hier niet, en wordt geweigerd voor hij opgebruikt raakt.
+          </p>
+          <p>
+            Elk toernooi heeft voor deze omroeper een naam en een ruimte (handig als de zaal meer dan één ruimte heeft). OpenPairings bewaart ze en is de baas: wijzig ze daar bij Instellingen → Omroeper, of hier, in de rij van het toernooi, zolang de verbinding aanstaat. Wat je hier invult is een verzoek; je ziet pas de nieuwe waarde als de server hem terugstuurt. Wie het laatst wijzigt, wint.
           </p>
         </section>
 
@@ -160,13 +163,16 @@ defmodule NunkiWeb.HelpLive do
           <h2>Joining a tournament</h2>
           <ol>
             <li>
-              In OpenPairings, open the tournament, the Hall announcer page, and press "Add an announcer".
+              In OpenPairings: the tournament's Settings → Hall announcer → "Add an announcer".
             </li>
             <li>Copy the link and paste it into "Join a tournament" on this page. Press Join.</li>
             <li>The tournament is in the list. A green dot: the line is up.</li>
           </ol>
           <p>
             The link works once, for fifteen minutes. Expired? Make a new one. A print station's link (Polis) does not work here, and is refused before it gets used up.
+          </p>
+          <p>
+            Each tournament gives this announcer a name and a room (handy when the hall has more than one room). OpenPairings keeps them and has the final say: change them there under Settings → Hall announcer, or here, in the tournament's row, while the line is up. What you type here is a request; you see the new value once the server sends it back. Whoever changes it last wins.
           </p>
         </section>
 

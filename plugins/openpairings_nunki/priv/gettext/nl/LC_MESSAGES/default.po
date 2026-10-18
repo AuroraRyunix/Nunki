@@ -30,8 +30,8 @@ msgstr "Omroeper toevoegen"
 
 #: lib/openpairings_nunki/plugin.ex:82
 #, elixir-autogen, elixir-format
-msgid "Adds \"Hall announcer\" to a tournament's menu: join a hall PC running Nunki, and it reads each round's pairings aloud and shows the countdown to the start of the round."
-msgstr "Voegt \"Omroeper\" toe aan het menu van een toernooi: koppel een pc in de zaal waarop Nunki draait, en die leest de paringen van elke ronde voor en toont het aftellen tot de start van de ronde."
+msgid "Adds \"Hall announcer\" to a tournament's Settings: join a hall PC running Nunki, and it reads each round's pairings aloud and shows the countdown to the start of the round."
+msgstr "Voegt \"Omroeper\" toe aan de instellingen van een toernooi: koppel een pc in de zaal waarop Nunki draait, en die leest de paringen van elke ronde voor en toont het aftellen tot de start van de ronde."
 
 #: lib/openpairings_nunki_web/live/tournament_live.ex:73
 #, elixir-autogen, elixir-format
@@ -146,8 +146,8 @@ msgstr "Er is nog geen ronde gepubliceerd. Het aftellen en het voorlezen gelden 
 
 #: lib/openpairings_nunki_web/live/index_live.ex:66
 #, elixir-autogen, elixir-format
-msgid "None yet. Open a tournament, choose \"Hall announcer\" in its menu and press \"Add an announcer\"."
-msgstr "Nog geen. Open een toernooi, kies \"Omroeper\" in het menu en druk op \"Omroeper toevoegen\"."
+msgid "None yet. Open a tournament's Settings, choose \"Hall announcer\" and press \"Add an announcer\"."
+msgstr "Nog geen. Open de instellingen van een toernooi, kies \"Omroeper\" en druk op \"Omroeper toevoegen\"."
 
 #: lib/openpairings_nunki_web/live/index_live.ex:47
 #, elixir-autogen, elixir-format
@@ -184,15 +184,35 @@ msgstr "Deze omroeper verwijderen? Hij vergeet dit toernooi."
 msgid "Reports"
 msgstr "Gemeld"
 
+#: lib/openpairings_nunki_web/live/tournament_live.ex
+#, elixir-autogen, elixir-format
+msgid "Room"
+msgstr "Ruimte"
+
 #: lib/openpairings_nunki_web/live/tournament_live.ex:275
 #, elixir-autogen, elixir-format
 msgid "Round start"
 msgstr "Start van de ronde"
 
+#: lib/openpairings_nunki_web/live/tournament_live.ex
+#, elixir-autogen, elixir-format
+msgid "Save"
+msgstr "Opslaan"
+
+#: lib/openpairings_nunki_web/live/tournament_live.ex
+#, elixir-autogen, elixir-format
+msgid "Saved."
+msgstr "Opgeslagen."
+
 #: lib/openpairings_nunki/plugin.ex:37
 #, elixir-autogen, elixir-format
 msgid "Sends each round's pairings to the announcers in the hall the moment they are public, and lets you start the round countdown and the reading aloud from here."
 msgstr "Stuurt de paringen van elke ronde naar de omroepers in de zaal zodra ze openbaar zijn, en laat je hier het aftellen en het voorlezen starten."
+
+#: lib/openpairings_nunki_web/live/tournament_live.ex
+#, elixir-autogen, elixir-format
+msgid "Settings - Hall announcer"
+msgstr "Instellingen - Omroeper"
 
 #: lib/openpairings_nunki_web/live/tournament_live.ex:333
 #, elixir-autogen, elixir-format

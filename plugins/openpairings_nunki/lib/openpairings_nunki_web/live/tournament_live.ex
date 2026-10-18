@@ -1,6 +1,7 @@
 defmodule OpenPairingsNunkiWeb.TournamentLive do
   @moduledoc """
-  `/p/nunki/tournaments/:id`: one tournament's hall announcers.
+  `/p/nunki/tournaments/:id`: one tournament's hall announcers, a page of
+  the tournament's Settings (the rail stays beside it).
 
   The arbiter adds an announcer (a one-time join link, as text and as a QR
   code, valid fifteen minutes), sees which are online and what they said
@@ -8,8 +9,15 @@ defmodule OpenPairingsNunkiWeb.TournamentLive do
   countdown for the latest published round, cancel it, have the pairings
   read aloud, make them stop. The pairings themselves need no button -
   they reach the announcers the moment they are public.
+
+  Each announcer's name and room can be changed here; the device can change
+  them too, and whichever came last is what the database says. Text typed
+  into a row and not yet saved is kept in `drafts`, so the page's periodic
+  reload does not eat it.
   """
   use OpenPairingsNunkiWeb, :live_view
+
+  import PairingsEngineWeb.SettingsSupport, only: [settings_page: 1]
 
   alias OpenPairingsNunki.{Hall, Plugin}
   alias PairingsEngine.{Features, Mobile, Tournaments}
@@ -32,6 +40,7 @@ defmodule OpenPairingsNunkiWeb.TournamentLive do
        ticking?: false,
        latest_round: 0,
        announcers_count: 0,
+       drafts: %{},
        countdown_form:
          to_form(%{"minutes" => to_string(Hall.default_countdown_minutes())}, as: :countdown)
      )}
@@ -71,6 +80,37 @@ defmodule OpenPairingsNunkiWeb.TournamentLive do
     case Hall.revoke(socket.assigns.current_scope, socket.assigns.tournament, id) do
       :ok ->
         {:noreply, socket |> assign(note: gettext("Announcer removed."), error: nil) |> load()}
+
+      {:error, :not_found} ->
+        {:noreply, assign(socket, error: gettext("That announcer is already gone."), note: nil)}
+    end
+  end
+
+  def handle_event("settings_draft", %{"announcer" => %{"id" => id} = params}, socket),
+    do: {:noreply, assign(socket, drafts: Map.put(socket.assigns.drafts, id, params))}
+
+  def handle_event("save_settings", %{"announcer" => %{"id" => id} = params}, socket) do
+    result =
+      case Integer.parse(id) do
+        {n, ""} ->
+          Hall.update_settings(
+            socket.assigns.current_scope,
+            socket.assigns.tournament,
+            n,
+            Map.take(params, ["name", "room"])
+          )
+
+        _bad ->
+          {:error, :not_found}
+      end
+
+    case result do
+      {:ok, _announcer} ->
+        {:noreply,
+         socket
+         |> assign(drafts: Map.delete(socket.assigns.drafts, id), note: gettext("Saved."))
+         |> assign(error: nil)
+         |> load()}
 
       {:error, :not_found} ->
         {:noreply, assign(socket, error: gettext("That announcer is already gone."), note: nil)}
@@ -154,7 +194,7 @@ defmodule OpenPairingsNunkiWeb.TournamentLive do
     %{current_scope: scope, tournament: t} = socket.assigns
     announcers = Hall.list_announcers(scope, t)
     now = DateTime.utc_now(:second)
-    rows = Enum.map(announcers, &row(&1, now))
+    rows = Enum.map(announcers, &row(&1, now, socket.assigns.drafts))
 
     socket
     |> assign(
@@ -166,7 +206,19 @@ defmodule OpenPairingsNunkiWeb.TournamentLive do
     |> tick()
   end
 
-  defp row(a, now), do: %{id: a.id, announcer: a, online?: Hall.online?(a, now)}
+  # The form shows the draft if somebody is halfway through typing one, the
+  # database otherwise.
+  defp row(a, now, drafts) do
+    id = to_string(a.id)
+    values = Map.merge(%{"id" => id, "name" => a.name, "room" => a.room}, drafts[id] || %{})
+
+    %{
+      id: a.id,
+      announcer: a,
+      online?: Hall.online?(a, now),
+      form: to_form(values, as: :announcer, id: "nunki-settings-#{a.id}")
+    }
+  end
 
   # One timer at a time, and only while a countdown runs.
   defp tick(socket) do
@@ -243,220 +295,251 @@ defmodule OpenPairingsNunkiWeb.TournamentLive do
       current_path={assigns[:current_path]}
       current_scope={@current_scope}
       tournament={@tournament}
-      active="plugin:nunki"
+      active="settings"
     >
-      <div class="page-header">
-        <div>
-          <h1>{gettext("Hall announcer")}</h1>
-
-          <p class="subtitle" style="margin: 0">
-            {gettext(
-              "The announcers in the hall read each round's pairings aloud as soon as they are public, and show the countdown to the start of the round."
-            )}
-          </p>
-        </div>
-      </div>
-
-      <p id="nunki-note" role="status" aria-live="polite" class={@note && "ok-note"}>{@note}</p>
-
-      <p :if={@error} id="nunki-error" role="alert" class="error-note">{@error}</p>
-
-      <section :if={!@enabled?} id="nunki-not-enabled" class="card">
-        <p class="hint">
-          {off_text()}
-          <.link navigate="/users/features" id="nunki-features-link">
-            {gettext("Switch it on in your settings.")}
-          </.link>
+      <.settings_page
+        tournament={@tournament}
+        current_scope={@current_scope}
+        active="plugin:nunki"
+        subtitle={gettext("Settings - Hall announcer")}
+      >
+        <p class="hint" style="margin-top: 0">
+          {gettext(
+            "The announcers in the hall read each round's pairings aloud as soon as they are public, and show the countdown to the start of the round."
+          )}
         </p>
-      </section>
 
-      <%= if @enabled? do %>
-        <section id="nunki-controls" class="card">
-          <h2>{gettext("Round start")}</h2>
+        <p id="nunki-note" role="status" aria-live="polite" class={@note && "ok-note"}>{@note}</p>
 
-          <%= if @latest_round == 0 do %>
-            <p id="nunki-no-round" class="hint">
-              {gettext(
-                "No round is published yet. The countdown and the reading aloud are for the latest published round."
-              )}
-            </p>
-          <% else %>
-            <p class="hint" id="nunki-latest-round">
-              {gettext("Latest published round: %{n}.", n: @latest_round)}
-            </p>
-          <% end %>
+        <p :if={@error} id="nunki-error" role="alert" class="error-note">{@error}</p>
 
-          <%= if @countdown do %>
-            <div id="nunki-countdown" class="nunki-countdown" style="margin: 8px 0">
-              <p style="margin: 0">
-                {gettext("Countdown for round %{n}:", n: @countdown.round)}
-                <strong
-                  id="nunki-countdown-clock"
-                  style="font-variant-numeric: tabular-nums; font-size: 1.4em"
-                >
-                  {clock(@seconds_left)}
-                </strong>
-              </p>
-
-              <div class="actions">
-                <button
-                  type="button"
-                  class="pe-btn"
-                  id="nunki-cancel-countdown"
-                  phx-click="cancel_countdown"
-                >
-                  {gettext("Cancel the countdown")}
-                </button>
-              </div>
-            </div>
-          <% else %>
-            <.form
-              for={@countdown_form}
-              id="nunki-countdown-form"
-              phx-change="choose_minutes"
-              phx-submit="start_countdown"
-              class="form-grid"
-            >
-              <.input
-                field={@countdown_form[:minutes]}
-                type="select"
-                label={gettext("Countdown")}
-                options={minute_options()}
-              />
-              <div class="actions">
-                <button
-                  type="submit"
-                  class="pe-btn primary"
-                  id="nunki-start-countdown"
-                  disabled={@latest_round == 0}
-                >
-                  {gettext("Start the countdown")}
-                </button>
-              </div>
-            </.form>
-          <% end %>
-
-          <div class="actions" style="margin-top: 8px">
-            <button
-              type="button"
-              class="pe-btn"
-              id="nunki-read"
-              phx-click="read"
-              disabled={@latest_round == 0}
-            >
-              {gettext("Read the pairings aloud")}
-            </button>
-
-            <button type="button" class="pe-btn" id="nunki-stop" phx-click="stop">
-              {gettext("Stop reading")}
-            </button>
-          </div>
+        <section :if={!@enabled?} id="nunki-not-enabled" class="card">
+          <p class="hint">
+            {off_text()}
+            <.link navigate="/users/features" id="nunki-features-link">
+              {gettext("Switch it on in your settings.")}
+            </.link>
+          </p>
         </section>
 
-        <section id="nunki-announcers" class="card">
-          <h2>{gettext("Announcers")}</h2>
+        <%= if @enabled? do %>
+          <section id="nunki-controls" class="card">
+            <h2>{gettext("Round start")}</h2>
 
-          <p :if={@announcers_count == 0} id="nunki-no-announcers" class="hint">
-            {gettext("No announcer has joined this tournament yet.")}
-          </p>
+            <%= if @latest_round == 0 do %>
+              <p id="nunki-no-round" class="hint">
+                {gettext(
+                  "No round is published yet. The countdown and the reading aloud are for the latest published round."
+                )}
+              </p>
+            <% else %>
+              <p class="hint" id="nunki-latest-round">
+                {gettext("Latest published round: %{n}.", n: @latest_round)}
+              </p>
+            <% end %>
 
-          <table :if={@announcers_count > 0} class="pe-table">
-            <thead>
-              <tr>
-                <th scope="col">{gettext("Name")}</th>
+            <%= if @countdown do %>
+              <div id="nunki-countdown" class="nunki-countdown" style="margin: 8px 0">
+                <p style="margin: 0">
+                  {gettext("Countdown for round %{n}:", n: @countdown.round)}
+                  <strong
+                    id="nunki-countdown-clock"
+                    style="font-variant-numeric: tabular-nums; font-size: 1.4em"
+                  >
+                    {clock(@seconds_left)}
+                  </strong>
+                </p>
 
-                <th scope="col">{gettext("State")}</th>
-
-                <th scope="col">{gettext("Last seen")}</th>
-
-                <th scope="col">{gettext("Reports")}</th>
-
-                <th scope="col"><span class="sr-only">{gettext("Actions")}</span></th>
-              </tr>
-            </thead>
-
-            <tbody id="nunki-announcer-list" phx-update="stream">
-              <tr :for={{dom_id, r} <- @streams.announcers} id={dom_id}>
-                <td>
-                  {if(r.announcer.name == "", do: r.announcer.device_id, else: r.announcer.name)}
-                  <span :if={r.announcer.software != ""} class="hint">
-                    &middot; {r.announcer.software}
-                  </span>
-                </td>
-
-                <td id={"#{dom_id}-state"}>
-                  <span class={if(r.online?, do: "ok-note", else: "hint")}>
-                    {if(r.online?, do: gettext("online"), else: gettext("offline"))}
-                  </span>
-                </td>
-
-                <td class="hint">{when_text(r.announcer.last_seen_at)}</td>
-
-                <td class="hint" id={"#{dom_id}-status"}>{status_text(r.announcer.status)}</td>
-
-                <td style="text-align: right">
+                <div class="actions">
                   <button
                     type="button"
                     class="pe-btn"
-                    id={"nunki-remove-#{r.id}"}
-                    phx-click="remove"
-                    phx-value-id={r.id}
-                    data-confirm={gettext("Remove this announcer? It forgets this tournament.")}
+                    id="nunki-cancel-countdown"
+                    phx-click="cancel_countdown"
                   >
-                    {gettext("Remove")}
+                    {gettext("Cancel the countdown")}
                   </button>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+                </div>
+              </div>
+            <% else %>
+              <.form
+                for={@countdown_form}
+                id="nunki-countdown-form"
+                phx-change="choose_minutes"
+                phx-submit="start_countdown"
+                class="form-grid"
+              >
+                <.input
+                  field={@countdown_form[:minutes]}
+                  type="select"
+                  label={gettext("Countdown")}
+                  options={minute_options()}
+                />
+                <div class="actions">
+                  <button
+                    type="submit"
+                    class="pe-btn primary"
+                    id="nunki-start-countdown"
+                    disabled={@latest_round == 0}
+                  >
+                    {gettext("Start the countdown")}
+                  </button>
+                </div>
+              </.form>
+            <% end %>
 
-          <div class="actions">
-            <button type="button" class="pe-btn primary" id="nunki-add" phx-click="add">
-              {gettext("Add an announcer")}
-            </button>
-          </div>
-
-          <div :if={@join} id="nunki-join" style="margin-top: 12px">
-            <p class="hint">
-              {gettext(
-                "Open Nunki on the hall PC, paste this link (or scan the code) and press Join. The link works once, until %{time}.",
-                time: when_text(@join.expires_at)
-              )}
-            </p>
-
-            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
-              <input
-                type="text"
-                readonly
-                id="nunki-join-link"
-                value={@join.url}
-                style="flex: 1 1 24rem; min-width: 0; font-family: monospace"
-              />
+            <div class="actions" style="margin-top: 8px">
               <button
                 type="button"
                 class="pe-btn"
-                id="nunki-copy-link"
-                phx-hook=".CopyJoinLink"
-                phx-update="ignore"
-                data-target="nunki-join-link"
-                data-copied={gettext("Copied")}
+                id="nunki-read"
+                phx-click="read"
+                disabled={@latest_round == 0}
               >
-                {gettext("Copy")}
+                {gettext("Read the pairings aloud")}
+              </button>
+
+              <button type="button" class="pe-btn" id="nunki-stop" phx-click="stop">
+                {gettext("Stop reading")}
               </button>
             </div>
+          </section>
 
-            <div id="nunki-join-qr" style="margin-top: 8px; width: 240px; max-width: 100%">
-              {Phoenix.HTML.raw(@join.qr_svg)}
-            </div>
+          <section id="nunki-announcers" class="card">
+            <h2>{gettext("Announcers")}</h2>
+
+            <p :if={@announcers_count == 0} id="nunki-no-announcers" class="hint">
+              {gettext("No announcer has joined this tournament yet.")}
+            </p>
+
+            <table :if={@announcers_count > 0} class="pe-table">
+              <thead>
+                <tr>
+                  <th scope="col">{gettext("Name")}</th>
+
+                  <th scope="col">{gettext("State")}</th>
+
+                  <th scope="col">{gettext("Last seen")}</th>
+
+                  <th scope="col">{gettext("Reports")}</th>
+
+                  <th scope="col"><span class="sr-only">{gettext("Actions")}</span></th>
+                </tr>
+              </thead>
+
+              <tbody id="nunki-announcer-list" phx-update="stream">
+                <tr :for={{dom_id, r} <- @streams.announcers} id={dom_id}>
+                  <td>
+                    <span id={"#{dom_id}-name"}>
+                      {if(r.announcer.name == "", do: r.announcer.device_id, else: r.announcer.name)}
+                    </span>
+                    <span :if={r.announcer.room != ""} id={"#{dom_id}-room"} class="hint">
+                      &middot; {r.announcer.room}
+                    </span>
+                    <span :if={r.announcer.software != ""} class="hint">
+                      &middot; {r.announcer.software}
+                    </span>
+
+                    <.form
+                      for={r.form}
+                      id={"nunki-settings-#{r.id}"}
+                      phx-change="settings_draft"
+                      phx-submit="save_settings"
+                      style="display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; margin-top: 6px"
+                    >
+                      <.input field={r.form[:id]} type="hidden" />
+                      <.input
+                        field={r.form[:name]}
+                        type="text"
+                        label={gettext("Name")}
+                        maxlength="60"
+                      />
+                      <.input
+                        field={r.form[:room]}
+                        type="text"
+                        label={gettext("Room")}
+                        maxlength="60"
+                      />
+                      <button type="submit" class="pe-btn" id={"nunki-settings-save-#{r.id}"}>
+                        {gettext("Save")}
+                      </button>
+                    </.form>
+                  </td>
+
+                  <td id={"#{dom_id}-state"}>
+                    <span class={if(r.online?, do: "ok-note", else: "hint")}>
+                      {if(r.online?, do: gettext("online"), else: gettext("offline"))}
+                    </span>
+                  </td>
+
+                  <td class="hint">{when_text(r.announcer.last_seen_at)}</td>
+
+                  <td class="hint" id={"#{dom_id}-status"}>{status_text(r.announcer.status)}</td>
+
+                  <td style="text-align: right">
+                    <button
+                      type="button"
+                      class="pe-btn"
+                      id={"nunki-remove-#{r.id}"}
+                      phx-click="remove"
+                      phx-value-id={r.id}
+                      data-confirm={gettext("Remove this announcer? It forgets this tournament.")}
+                    >
+                      {gettext("Remove")}
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
 
             <div class="actions">
-              <button type="button" class="pe-btn" id="nunki-hide-join" phx-click="hide_join">
-                {gettext("Done")}
+              <button type="button" class="pe-btn primary" id="nunki-add" phx-click="add">
+                {gettext("Add an announcer")}
               </button>
             </div>
-          </div>
-        </section>
-      <% end %>
+
+            <div :if={@join} id="nunki-join" style="margin-top: 12px">
+              <p class="hint">
+                {gettext(
+                  "Open Nunki on the hall PC, paste this link (or scan the code) and press Join. The link works once, until %{time}.",
+                  time: when_text(@join.expires_at)
+                )}
+              </p>
+
+              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
+                <input
+                  type="text"
+                  readonly
+                  id="nunki-join-link"
+                  value={@join.url}
+                  style="flex: 1 1 24rem; min-width: 0; font-family: monospace"
+                />
+                <button
+                  type="button"
+                  class="pe-btn"
+                  id="nunki-copy-link"
+                  phx-hook=".CopyJoinLink"
+                  phx-update="ignore"
+                  data-target="nunki-join-link"
+                  data-copied={gettext("Copied")}
+                >
+                  {gettext("Copy")}
+                </button>
+              </div>
+
+              <div id="nunki-join-qr" style="margin-top: 8px; width: 240px; max-width: 100%">
+                {Phoenix.HTML.raw(@join.qr_svg)}
+              </div>
+
+              <div class="actions">
+                <button type="button" class="pe-btn" id="nunki-hide-join" phx-click="hide_join">
+                  {gettext("Done")}
+                </button>
+              </div>
+            </div>
+          </section>
+        <% end %>
+      </.settings_page>
 
       <script :type={Phoenix.LiveView.ColocatedHook} name=".CopyJoinLink">
         export default {
