@@ -41,7 +41,8 @@ defmodule Nunki.Voice do
   @type voice :: %{id: String.t(), label: String.t(), lang: String.t()}
 
   @typedoc """
-  What a backend may ask of the system: `cmd` (as `System.cmd/3`), `find`
+  What a backend may ask of the system: `cmd` (as `System.cmd/3`; the real
+  one is `Nunki.Cmd.run/3`, which adds a deadline), `find`
   (as `System.find_executable/1`), `exists?` (as `File.exists?/1`), `env`
   (as `System.get_env/1`).
   """
@@ -81,7 +82,8 @@ defmodule Nunki.Voice do
   @doc "What a backend may ask of the real system."
   def default_env do
     %{
-      cmd: &System.cmd/3,
+      # With a deadline, and killed if whoever asked is gone (Nunki.Cmd).
+      cmd: &Nunki.Cmd.run/3,
       find: &System.find_executable/1,
       exists?: &File.exists?/1,
       env: &System.get_env/1
@@ -204,6 +206,9 @@ defmodule Nunki.Voice do
           ])
 
         {:os_pid, os_pid} = Port.info(port, :os_pid)
+        # Should the Speaker go without saying goodbye (killed, crashed),
+        # the reaper sees to it that the voice goes too.
+        Nunki.Cmd.Reaper.watch(os_pid)
         {:ok, %{ref: make_ref(), port: port, os_pid: os_pid, file: file}}
 
       {:error, reason} ->
@@ -223,7 +228,11 @@ defmodule Nunki.Voice do
   def done?(_handle, _message), do: false
 
   @doc "Cleans up after an utterance that ended by itself."
-  def finished(%{file: file}), do: File.rm(file)
+  def finished(%{file: file} = handle) do
+    if os_pid = handle[:os_pid], do: Nunki.Cmd.Reaper.unwatch(os_pid)
+    File.rm(file)
+  end
+
   def finished(_handle), do: :ok
 
   @doc """
@@ -231,7 +240,7 @@ defmodule Nunki.Voice do
   `taskkill /T /F` on Windows (PowerShell plays the sound in its own
   process, so the tree has to go), `kill` elsewhere.
   """
-  def stop(handle, run \\ &System.cmd/3)
+  def stop(handle, run \\ &Nunki.Cmd.run/3)
 
   def stop(%{port: port, os_pid: os_pid} = handle, run) do
     kill(os_pid, :os.type(), run)
@@ -247,8 +256,12 @@ defmodule Nunki.Voice do
 
   @doc false
   def kill(os_pid, {:win32, _}, run),
-    do: run.("taskkill", ["/T", "/F", "/PID", Integer.to_string(os_pid)], stderr_to_stdout: true)
+    do:
+      run.("taskkill", ["/T", "/F", "/PID", Integer.to_string(os_pid)],
+        stderr_to_stdout: true,
+        timeout: 5_000
+      )
 
   def kill(os_pid, _unix, run),
-    do: run.("kill", ["-TERM", Integer.to_string(os_pid)], stderr_to_stdout: true)
+    do: run.("kill", ["-TERM", Integer.to_string(os_pid)], stderr_to_stdout: true, timeout: 5_000)
 end

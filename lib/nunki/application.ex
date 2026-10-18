@@ -15,19 +15,24 @@ defmodule Nunki.Application do
   @doc """
   What Nunki runs. The store before everything that reads it, the speaker
   and the countdown before the lines that feed them, the endpoint last.
+
+  A stop goes the other way round, and every child has a deadline: no
+  supervisor waits `:infinity` for anything. The reaper is first so that
+  it stops last, and takes with it any voice still talking.
   """
   def children do
     [
-      {Phoenix.PubSub, name: Nunki.PubSub},
-      {Registry, keys: :unique, name: Nunki.LinkRegistry},
-      {Task.Supervisor, name: Nunki.TaskSupervisor}
+      Nunki.Cmd.Reaper,
+      bounded({Phoenix.PubSub, name: Nunki.PubSub}),
+      bounded({Registry, keys: :unique, name: Nunki.LinkRegistry}),
+      bounded({Task.Supervisor, name: Nunki.TaskSupervisor})
     ] ++
       fake_voice() ++
       [
         Nunki.Store,
         Nunki.Speaker,
         Nunki.Countdown,
-        {DynamicSupervisor, name: Nunki.Links, strategy: :one_for_one},
+        bounded({DynamicSupervisor, name: Nunki.Links, strategy: :one_for_one}),
         # Which voices this machine has: asked once, in the background, since
         # asking PowerShell takes a second or two and nobody should wait for it.
         Supervisor.child_spec({Task, &refresh_voices/0}, id: :voices),
@@ -38,8 +43,11 @@ defmodule Nunki.Application do
         do: [Supervisor.child_spec({Task, &Nunki.Tournaments.start_links/0}, id: :links)],
         else: []
       ) ++
-      [NunkiWeb.Endpoint]
+      [bounded(NunkiWeb.Endpoint, 8_000)]
   end
+
+  # A supervisor's own default is to wait for its children forever.
+  defp bounded(spec, ms \\ 5_000), do: Supervisor.child_spec(spec, shutdown: ms)
 
   # The fake voice keeps what it was told in an Agent; only when it is the voice.
   defp fake_voice do

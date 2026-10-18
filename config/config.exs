@@ -20,6 +20,9 @@ config :phoenix_live_view, :colocated_assets, disable_symlink_warning: true
 config :nunki, NunkiWeb.Endpoint,
   url: [host: "localhost"],
   adapter: Bandit.PhoenixAdapter,
+  # At a stop, open connections (the hall screen, the control page) get
+  # three seconds to go, not Bandit's fifteen.
+  http: [thousand_island_options: [shutdown_timeout: 3_000]],
   render_errors: [formats: [html: NunkiWeb.ErrorHTML], layout: false],
   pubsub_server: Nunki.PubSub,
   live_view: [signing_salt: "q3Ztm8nE"]
