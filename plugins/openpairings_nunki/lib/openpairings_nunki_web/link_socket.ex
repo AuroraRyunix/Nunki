@@ -9,10 +9,11 @@ defmodule OpenPairingsNunkiWeb.LinkSocket do
   closed. After `welcome` the socket:
 
     * sends `settings` (the announcer's name and room, which live here and
-      nowhere else), and again whenever either changes, from the tournament
+      nowhere else, and the names of the tournament's rooms), and again whenever either changes, from the tournament
       page or from the device's own `settings` frame, but never the same
       pair twice in a row;
-    * sends the latest published round (`round`), if there is one, and the
+    * sends the latest published round (`round`), if there is one, cut to the
+      announcer's room when it has one, and the
       running countdown with the seconds that are left of it, if one runs;
     * listens on the core's tournament topic, and on any change looks again
       300 ms later (one look per burst), sending the round only when its
@@ -88,8 +89,21 @@ defmodule OpenPairingsNunkiWeb.LinkSocket do
   # change brings back over the plugin's topic.
   defp frame(%{"type" => "settings"} = frame, state) do
     announcer = Hall.get_announcer(state.announcer.id) || state.announcer
-    Hall.apply_settings(announcer, Map.take(frame, ["name", "room"]))
-    {:ok, %{state | announcer: Hall.touch(announcer)}}
+
+    case Hall.apply_settings(announcer, Map.take(frame, ["name", "room"])) do
+      {:error, :room} ->
+        # Refused: the server's own settings, plus what it did not like.
+        # Not remembered as "sent", so the next real change still goes out.
+        state = %{state | announcer: Hall.touch(announcer)}
+
+        case settings_frame(announcer) do
+          nil -> {:ok, state}
+          settings -> {:push, text(Map.put(settings, :error, "room")), state}
+        end
+
+      _ok ->
+        {:ok, %{state | announcer: Hall.touch(announcer)}}
+    end
   end
 
   # The tournament was removed on the device: removed here too.
@@ -148,9 +162,14 @@ defmodule OpenPairingsNunkiWeb.LinkSocket do
     do: {:ok, %{state | recheck: Process.send_after(self(), :recheck, @debounce_ms)}}
 
   def handle_info(:recheck, %{announcer: %{}} = state) do
-    case round_frames(%{state | recheck: nil}) do
-      {[], state} -> {:ok, state}
-      {frames, state} -> {:push, Enum.map(frames, &text/1), state}
+    # The tournament may have changed its rooms: the settings frame and the
+    # round, filtered by the room, both get another look.
+    {settings, state} = settings_frames(%{state | recheck: nil})
+    {round, state} = round_frames(state)
+
+    case settings ++ round do
+      [] -> {:ok, state}
+      frames -> {:push, Enum.map(frames, &text/1), state}
     end
   end
 
@@ -158,9 +177,13 @@ defmodule OpenPairingsNunkiWeb.LinkSocket do
     do: {:push, text(frame), state}
 
   def handle_info({:nunki_settings_changed, id}, %{announcer: %{id: id}} = state) do
-    case settings_frames(state) do
-      {[], state} -> {:ok, state}
-      {frames, state} -> {:push, Enum.map(frames, &text/1), state}
+    # A room change changes the boards the announcer is sent, too.
+    {settings, state} = settings_frames(state)
+    {round, state} = round_frames(state)
+
+    case settings ++ round do
+      [] -> {:ok, state}
+      frames -> {:push, Enum.map(frames, &text/1), state}
     end
   end
 
@@ -193,18 +216,38 @@ defmodule OpenPairingsNunkiWeb.LinkSocket do
         {[], state}
 
       row ->
-        frame = Protocol.settings(row.name, row.room)
+        frame = settings_frame(row)
 
-        if frame == state.last_settings,
+        if frame == nil or frame == state.last_settings,
           do: {[], state},
           else: {[frame], %{state | announcer: row, last_settings: frame}}
     end
   end
 
+  defp settings_frame(row) do
+    case Tournaments.get_tournament(row.tournament_id) do
+      nil ->
+        nil
+
+      t ->
+        Protocol.settings(row.name, Hall.room_label(t, row), PairingsEngine.Rooms.names(t))
+    end
+  end
+
   # The round frame to send now, if the latest published round is newer
-  # than, or different from, the last one this socket sent.
+  # than, or different from, the last one this socket sent. The payload is
+  # the announcer's own: with a room, only that room's boards, and its `rev`
+  # moves when the room does.
   defp round_frames(state) do
-    case RoundPayload.latest(state.announcer.tournament_id) do
+    row = Hall.get_announcer(state.announcer.id) || state.announcer
+
+    payload =
+      case Tournaments.get_tournament(row.tournament_id) do
+        nil -> nil
+        t -> t |> RoundPayload.latest() |> RoundPayload.for_room(Hall.effective_room(t, row))
+      end
+
+    case payload do
       nil ->
         {[], state}
 

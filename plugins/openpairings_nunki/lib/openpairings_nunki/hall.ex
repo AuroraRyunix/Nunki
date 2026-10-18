@@ -28,7 +28,7 @@ defmodule OpenPairingsNunki.Hall do
 
   alias OpenPairingsNunki.{Announcer, Countdown, JoinCode, Protocol}
   alias PairingsEngine.Accounts.Scope
-  alias PairingsEngine.{Repo, Tournaments}
+  alias PairingsEngine.{Repo, Rooms, Tournaments}
   alias PairingsEngine.Tournaments.Tournament
 
   @code_alphabet ~c"abcdefghijklmnopqrstuvwxyz234567"
@@ -225,16 +225,37 @@ defmodule OpenPairingsNunki.Hall do
 
   @doc """
   The arbiter renames an announcer or sets its room from the tournament
-  page. `attrs` holds `"name"` and/or `"room"`; an absent key stays as it
-  is. `{:ok, announcer}`, or `{:error, :not_found}` for an announcer that is
-  not (or no longer) this tournament's. See `apply_settings/2` for the rules.
+  page. `attrs` holds `"name"` and/or `"room_id"`; an absent key stays as
+  it is. `{:ok, announcer}`, `{:error, :room}` for a room the tournament
+  does not have, or `{:error, :not_found}` for an announcer that is not (or
+  no longer) this tournament's. See `apply_settings/2` for the rules.
   """
   def update_settings(%Scope{} = scope, %Tournament{} = tournament, announcer_id, attrs) do
     tournament = authorize!(scope, tournament)
 
     case Repo.get_by(Announcer, id: announcer_id, tournament_id: tournament.id) do
-      %Announcer{revoked_at: nil} = a -> {:ok, apply_settings(a, attrs)}
+      %Announcer{revoked_at: nil} = a -> apply_settings(a, attrs)
       _gone -> {:error, :not_found}
+    end
+  end
+
+  @doc """
+  The room `announcer` stands in: the tournament's room its `room_id` still
+  points at, as `PairingsEngine.Rooms` lists it, or nil. A room that was
+  deleted is no room; a rename shows, because the id is what is kept.
+  """
+  def effective_room(%Tournament{} = tournament, %Announcer{room_id: id}),
+    do: Rooms.get(tournament, id)
+
+  @doc """
+  The room as the device is told: the effective room's current name, or,
+  for an announcer from before rooms (no `room_id`), the free text it
+  still carries, which is a label and nothing more.
+  """
+  def room_label(%Tournament{} = tournament, %Announcer{} = a) do
+    case effective_room(tournament, a) do
+      %{name: name} -> name
+      nil -> if a.room_id == "", do: a.room, else: ""
     end
   end
 
@@ -244,29 +265,63 @@ defmodule OpenPairingsNunki.Hall do
   This is the one door for both sides: the server is the truth, so what
   the device asks for is only ever a request.
 
-  Both are trimmed and cut to 60 characters. An absent key stays as it is,
-  and so does the name when the new one comes out empty; a room may be
-  emptied. Returns the announcer as stored.
+  The room is a room of the tournament, asked for by `"room_id"` (the
+  page) or by `"room"`, its name (the device; trimmed, case-insensitive).
+  An empty one clears it. The exact free text an older announcer still
+  carries is accepted back unchanged; anything else is refused with
+  `{:error, :room}` and nothing at all is stored. The name is trimmed and
+  cut to 60 characters; an absent key stays as it is, and so does the name
+  when the new one comes out empty. `{:ok, announcer}` as stored.
   """
   def apply_settings(%Announcer{} = a, attrs) when is_map(attrs) do
     name = if is_binary(attrs["name"]), do: clip(attrs["name"], @name_max), else: ""
-    room = if is_binary(attrs["room"]), do: clip(attrs["room"], @name_max), else: a.room
 
-    changes =
-      %{name: if(name == "", do: a.name, else: name), room: room}
-      |> Enum.reject(fn {key, value} -> Map.fetch!(a, key) == value end)
+    with %Tournament{} = t <- Tournaments.get_tournament(a.tournament_id) || {:error, :gone},
+         {:ok, room_changes} <- room_changes(t, a, attrs) do
+      changes =
+        %{name: if(name == "", do: a.name, else: name)}
+        |> Map.merge(room_changes)
+        |> Enum.reject(fn {key, value} -> Map.fetch!(a, key) == value end)
 
-    if changes == [] do
-      a
+      if changes == [] do
+        {:ok, a}
+      else
+        Repo.update_all(from(x in Announcer, where: x.id == ^a.id), set: changes)
+        broadcast(a.tournament_id, {:nunki_settings_changed, a.id})
+        notify(a.tournament_id)
+        {:ok, struct(a, changes)}
+      end
     else
-      Repo.update_all(from(x in Announcer, where: x.id == ^a.id), set: changes)
-      broadcast(a.tournament_id, {:nunki_settings_changed, a.id})
-      notify(a.tournament_id)
-      struct(a, changes)
+      {:error, :gone} -> {:error, :not_found}
+      {:error, :room} -> {:error, :room}
     end
   end
 
-  def apply_settings(%Announcer{} = a, _attrs), do: a
+  def apply_settings(%Announcer{} = a, _attrs), do: {:ok, a}
+
+  defp room_changes(t, a, %{"room_id" => id}) when is_binary(id) do
+    id = String.trim(id)
+
+    case {id, Rooms.get(t, id)} do
+      {"", _} -> {:ok, %{room_id: "", room: ""}}
+      {_, %{} = room} -> {:ok, %{room_id: room.id, room: room.name}}
+      {same, nil} when same == a.room_id -> {:ok, %{}}
+      _unknown -> {:error, :room}
+    end
+  end
+
+  defp room_changes(t, a, %{"room" => text}) when is_binary(text) do
+    text = clip(text, @name_max)
+
+    case {text, Rooms.find_by_name(t, text)} do
+      {"", _} -> {:ok, %{room_id: "", room: ""}}
+      {_, %{} = room} -> {:ok, %{room_id: room.id, room: room.name}}
+      {same, nil} when same == a.room and a.room_id == "" -> {:ok, %{}}
+      _unknown -> {:error, :room}
+    end
+  end
+
+  defp room_changes(_t, _a, _attrs), do: {:ok, %{}}
 
   @doc "Marks the announcer connected, seen now."
   def connected(%Announcer{} = a), do: update_live(a, connected: true, last_seen_at: now())

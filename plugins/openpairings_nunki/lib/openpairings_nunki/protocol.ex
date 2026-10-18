@@ -52,8 +52,13 @@ defmodule OpenPairingsNunki.Protocol do
   def pong, do: %{type: "pong"}
 
   @doc """
-  The announcer's name and room as this server holds them. Sent after
-  `welcome` and whenever either changes; the server is the truth.
+  The announcer's name and room as this server holds them, and the names
+  of the tournament's rooms to choose from. Sent after `welcome` and
+  whenever any of it changes; the server is the truth. `error` is added
+  when this frame answers a request that was refused (`"room"`).
   """
-  def settings(name, room), do: %{type: "settings", name: name, room: room}
+  def settings(name, room, rooms_available, error \\ nil) do
+    frame = %{type: "settings", name: name, room: room, rooms_available: rooms_available}
+    if error, do: Map.put(frame, :error, error), else: frame
+  end
 end

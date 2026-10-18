@@ -134,6 +134,11 @@ msgstr ""
 msgid "No countdown is running."
 msgstr ""
 
+#: lib/openpairings_nunki_web/live/tournament_live.ex
+#, elixir-autogen, elixir-format
+msgid "No room"
+msgstr ""
+
 #: lib/openpairings_nunki_web/live/tournament_live.ex:204
 #, elixir-autogen, elixir-format
 msgid "No round is published yet. Publish the pairings first."
@@ -241,6 +246,11 @@ msgstr ""
 msgid "That announcer is already gone."
 msgstr ""
 
+#: lib/openpairings_nunki_web/live/tournament_live.ex
+#, elixir-autogen, elixir-format
+msgid "That room does not exist in this tournament."
+msgstr ""
+
 #: lib/openpairings_nunki_web/live/tournament_live.ex:253
 #, elixir-autogen, elixir-format
 msgid "The announcers in the hall read each round's pairings aloud as soon as they are public, and show the countdown to the start of the round."
@@ -252,9 +262,19 @@ msgstr ""
 msgid "The hall announcer is switched off for your account."
 msgstr ""
 
+#: lib/openpairings_nunki_web/live/tournament_live.ex
+#, elixir-autogen, elixir-format
+msgid "This tournament has no rooms yet; make them in Settings, Rooms."
+msgstr ""
+
 #: lib/openpairings_nunki_web/live/index_live.ex:73
 #, elixir-autogen, elixir-format
 msgid "Tournament"
+msgstr ""
+
+#: lib/openpairings_nunki_web/live/tournament_live.ex
+#, elixir-autogen, elixir-format
+msgid "Typed as \"%{room}\", not a room of this tournament."
 msgstr ""
 
 #: lib/openpairings_nunki_web/live/index_live.ex:64

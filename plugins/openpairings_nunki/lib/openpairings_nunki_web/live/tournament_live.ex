@@ -11,7 +11,10 @@ defmodule OpenPairingsNunkiWeb.TournamentLive do
   they reach the announcers the moment they are public.
 
   Each announcer's name and room can be changed here; the device can change
-  them too, and whichever came last is what the database says. Text typed
+  them too, and whichever came last is what the database says. The room is
+  one of the tournament's rooms (or none), and an announcer in a room is
+  sent only that room's boards. An announcer from before rooms may carry a
+  free-text room: it is shown as a hint, and is a label and nothing else. Text typed
   into a row and not yet saved is kept in `drafts`, so the page's periodic
   reload does not eat it.
   """
@@ -20,7 +23,7 @@ defmodule OpenPairingsNunkiWeb.TournamentLive do
   import PairingsEngineWeb.SettingsSupport, only: [settings_page: 1]
 
   alias OpenPairingsNunki.{Hall, Plugin}
-  alias PairingsEngine.{Features, Mobile, Tournaments}
+  alias PairingsEngine.{Features, Mobile, Rooms, Tournaments}
 
   @refresh_ms 15_000
 
@@ -97,7 +100,7 @@ defmodule OpenPairingsNunkiWeb.TournamentLive do
             socket.assigns.current_scope,
             socket.assigns.tournament,
             n,
-            Map.take(params, ["name", "room"])
+            Map.take(params, ["name", "room_id"])
           )
 
         _bad ->
@@ -111,6 +114,10 @@ defmodule OpenPairingsNunkiWeb.TournamentLive do
          |> assign(drafts: Map.delete(socket.assigns.drafts, id), note: gettext("Saved."))
          |> assign(error: nil)
          |> load()}
+
+      {:error, :room} ->
+        {:noreply,
+         assign(socket, error: gettext("That room does not exist in this tournament."), note: nil)}
 
       {:error, :not_found} ->
         {:noreply, assign(socket, error: gettext("That announcer is already gone."), note: nil)}
@@ -194,13 +201,16 @@ defmodule OpenPairingsNunkiWeb.TournamentLive do
     %{current_scope: scope, tournament: t} = socket.assigns
     announcers = Hall.list_announcers(scope, t)
     now = DateTime.utc_now(:second)
-    rows = Enum.map(announcers, &row(&1, now, socket.assigns.drafts))
+    rooms = Rooms.list(t)
+    rows = Enum.map(announcers, &row(&1, rooms, now, socket.assigns.drafts))
 
     socket
     |> assign(
       countdown: Hall.current_countdown(t.id),
       latest_round: Tournaments.latest_published_round_number(t),
-      announcers_count: length(rows)
+      announcers_count: length(rows),
+      room_options: [{gettext("No room"), ""} | Enum.map(rooms, &{&1.name, &1.id})],
+      rooms?: rooms != []
     )
     |> stream(:announcers, rows, reset: true)
     |> tick()
@@ -208,14 +218,17 @@ defmodule OpenPairingsNunkiWeb.TournamentLive do
 
   # The form shows the draft if somebody is halfway through typing one, the
   # database otherwise.
-  defp row(a, now, drafts) do
+  defp row(a, rooms, now, drafts) do
     id = to_string(a.id)
-    values = Map.merge(%{"id" => id, "name" => a.name, "room" => a.room}, drafts[id] || %{})
+    current = if Enum.any?(rooms, &(&1.id == a.room_id)), do: a.room_id, else: ""
+    values = Map.merge(%{"id" => id, "name" => a.name, "room_id" => current}, drafts[id] || %{})
 
     %{
       id: a.id,
       announcer: a,
       online?: Hall.online?(a, now),
+      room: Enum.find(rooms, &(&1.id == a.room_id)),
+      legacy_room: if(a.room_id == "" and a.room != "", do: a.room),
       form: to_form(values, as: :announcer, id: "nunki-settings-#{a.id}")
     }
   end
@@ -433,8 +446,11 @@ defmodule OpenPairingsNunkiWeb.TournamentLive do
                     <span id={"#{dom_id}-name"}>
                       {if(r.announcer.name == "", do: r.announcer.device_id, else: r.announcer.name)}
                     </span>
-                    <span :if={r.announcer.room != ""} id={"#{dom_id}-room"} class="hint">
-                      &middot; {r.announcer.room}
+                    <span :if={r.room} id={"#{dom_id}-room"} class="hint">
+                      &middot; {r.room.name}
+                    </span>
+                    <span :if={r.legacy_room} id={"#{dom_id}-room"} class="hint">
+                      &middot; {r.legacy_room}
                     </span>
                     <span :if={r.announcer.software != ""} class="hint">
                       &middot; {r.announcer.software}
@@ -455,15 +471,23 @@ defmodule OpenPairingsNunkiWeb.TournamentLive do
                         maxlength="60"
                       />
                       <.input
-                        field={r.form[:room]}
-                        type="text"
+                        field={r.form[:room_id]}
+                        type="select"
                         label={gettext("Room")}
-                        maxlength="60"
+                        options={@room_options}
                       />
                       <button type="submit" class="pe-btn" id={"nunki-settings-save-#{r.id}"}>
                         {gettext("Save")}
                       </button>
                     </.form>
+                    <p :if={r.legacy_room} id={"#{dom_id}-legacy-room"} class="hint">
+                      {gettext("Typed as \"%{room}\", not a room of this tournament.",
+                        room: r.legacy_room
+                      )}
+                    </p>
+                    <p :if={not @rooms?} id={"#{dom_id}-no-rooms"} class="hint">
+                      {gettext("This tournament has no rooms yet; make them in Settings, Rooms.")}
+                    </p>
                   </td>
 
                   <td id={"#{dom_id}-state"}>
