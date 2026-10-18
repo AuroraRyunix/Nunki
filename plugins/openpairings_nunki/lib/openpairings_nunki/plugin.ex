@@ -74,9 +74,10 @@ defmodule OpenPairingsNunki.Plugin do
     [
       %{
         key: @feature,
-        # Any arbiter with speakers in the hall might want it; no federation
-        # has an opinion on loudspeakers.
-        federation: nil,
+        # The hosted edition is a Belgian server, and every plug-in on it
+        # lives in the Belgian pack. "Optional tools for any federation" is
+        # where nobody looks, as was pointed out with some force.
+        federation: "BEL",
         label: gettext("Hall announcer (Nunki)"),
         description:
           gettext(

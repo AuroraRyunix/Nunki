@@ -35,7 +35,7 @@ defmodule OpenPairingsNunkiWeb.PagesTest do
     end
 
     test "the feature is a general one" do
-      assert [%{key: "nunki_hall_announcer", federation: nil}] = Plugin.features()
+      assert [%{key: "nunki_hall_announcer", federation: "BEL"}] = Plugin.features()
     end
   end
 

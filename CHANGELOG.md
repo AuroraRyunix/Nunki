@@ -15,6 +15,8 @@ tagged so that a version can be skimmed:
 
 ## [Unreleased]
 
+- [Change] **The Hall announcer switch is in the Belgian pack** of OpenPairings' Features, not under "Optional tools for any federation", a heading whose main achievement was never being read.
+
 ## [0.1.0] - 2026-10-18
 
 - [Feature] **Nunki exists.** It reads the pairings aloud the moment OpenPairings publishes them, white first, byes last, and counts down to the round: ten minutes, five, one, and "starts now". Only the moments still ahead, so a countdown started at five minutes does not open with "ten".
