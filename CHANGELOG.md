@@ -15,6 +15,9 @@ tagged so that a version can be skimmed:
 
 ## [Unreleased]
 
+- [Fix] **Stopping Nunki stops the voice too, whoever goes first.** Every program Nunki starts - `say`, `espeak-ng`, PowerShell, `kill` itself - now has a deadline, and is killed when whoever was waiting for it is gone. The voice reading a line aloud is killed even when the Speaker is not given the chance to say goodbye, and whatever is still talking when Nunki stops goes with it. Erlang closes the port and walks away; the program on the other end used to finish its sentence to an empty hall.
+- [Fix] **No part of a stop waits forever.** Every supervisor has a deadline, open browser connections get three seconds instead of fifteen, and on the Mac the launcher's SIGKILL after twenty seconds now reaches the whole tree under the server - the BEAM and the programs it started - rather than the BEAM alone. The app's own last resort, ten seconds later, does the same instead of killing only the script and leaving the server to launchd.
+
 - [Change] **The Hall announcer switch is in the Belgian pack** of OpenPairings' Features, not under "Optional tools for any federation", a heading whose main achievement was never being read.
 
 ## [0.1.0] - 2026-10-18
