@@ -90,13 +90,17 @@ defmodule OpenPairingsNunkiWeb.LinkSocketTest do
 
   describe "the round" do
     test "is not sent while round 1 is unpublished", ctx do
-      assert [%{"type" => "welcome"}] = frames(welcomed(ctx))
+      assert [%{"type" => "welcome"}, %{"type" => "settings"}] = frames(welcomed(ctx))
     end
 
     test "is sent on welcome once published", %{t: t} = ctx do
       publish!(t, 1)
 
-      assert [%{"type" => "welcome"}, %{"type" => "round", "round" => payload}] =
+      assert [
+               %{"type" => "welcome"},
+               %{"type" => "settings"},
+               %{"type" => "round", "round" => payload}
+             ] =
                frames(welcomed(ctx))
 
       assert payload["round"] == 1
@@ -138,7 +142,7 @@ defmodule OpenPairingsNunkiWeb.LinkSocketTest do
       publish!(t, 1)
       {:ok, cd} = Hall.start_countdown(scope, t, 5)
 
-      assert [_welcome, _round, %{"type" => "countdown"} = c] = frames(welcomed(ctx))
+      assert [_welcome, _settings, _round, %{"type" => "countdown"} = c] = frames(welcomed(ctx))
       assert c["round"] == 1
       assert c["id"] == cd.token
       assert c["seconds_left"] in 290..300
@@ -152,7 +156,90 @@ defmodule OpenPairingsNunkiWeb.LinkSocketTest do
         set: [ends_at: DateTime.add(DateTime.utc_now(:second), -5)]
       )
 
-      assert [%{"type" => "welcome"}, %{"type" => "round"}] = frames(welcomed(ctx))
+      assert [%{"type" => "welcome"}, %{"type" => "settings"}, %{"type" => "round"}] =
+               frames(welcomed(ctx))
+    end
+  end
+
+  describe "name and room (settings)" do
+    defp settings_in(state, frame) do
+      text = Jason.encode!(Map.put(frame, :type, "settings"))
+      LinkSocket.handle_in({text, opcode: :text}, state)
+    end
+
+    defp row(a), do: Repo.get!(Announcer, a.id)
+
+    test "come right after welcome, as the row has them", %{announcer: a} = ctx do
+      assert [%{"type" => "welcome"}, settings] = frames(welcomed(ctx))
+      assert settings == %{"type" => "settings", "name" => "Hall PC", "room" => ""}
+      assert row(a).room == ""
+    end
+
+    test "the device's request is stored, trimmed and cut, and echoed once",
+         %{announcer: a} = ctx do
+      state = ctx |> welcomed() |> state()
+      id = a.id
+
+      assert {:ok, state} = settings_in(state, %{name: "  Door PC  ", room: " Foyer "})
+      assert %{name: "Door PC", room: "Foyer"} = row(a)
+      assert_receive {:nunki_settings_changed, ^id} = changed
+
+      result = LinkSocket.handle_info(changed, state)
+      assert [%{"type" => "settings", "name" => "Door PC", "room" => "Foyer"}] = frames(result)
+
+      # The same news again is not told twice.
+      assert {:ok, _state} = LinkSocket.handle_info(changed, state(result))
+
+      long = String.duplicate("x", 90)
+      assert {:ok, _state} = settings_in(state(result), %{name: long, room: long})
+      assert %{name: name, room: room} = row(a)
+      assert String.length(name) == 60 and String.length(room) == 60
+    end
+
+    test "an absent key stays, an empty name stays, an empty room goes", %{announcer: a} = ctx do
+      state = ctx |> welcomed() |> state()
+      {:ok, state} = settings_in(state, %{name: "Door PC", room: "Foyer"})
+
+      {:ok, state} = settings_in(state, %{name: "Lobby PC"})
+      assert %{name: "Lobby PC", room: "Foyer"} = row(a)
+
+      {:ok, state} = settings_in(state, %{name: "   ", room: ""})
+      assert %{name: "Lobby PC", room: ""} = row(a)
+
+      {:ok, _state} = settings_in(state, %{room: "Annex"})
+      assert %{name: "Lobby PC", room: "Annex"} = row(a)
+    end
+
+    test "are ignored before hello", %{announcer: a} do
+      assert {:ok, %{announcer: nil}} =
+               settings_in(LinkSocket.new_state(), %{name: "Intruder", room: "Anywhere"})
+
+      assert %{name: "Hall PC", room: ""} = row(a)
+    end
+
+    test "a rename on the page reaches the socket", %{scope: scope, t: t, announcer: a} = ctx do
+      state = ctx |> welcomed() |> state()
+      id = a.id
+
+      assert {:ok, %{id: ^id}} =
+               Hall.update_settings(scope, t, a.id, %{"name" => "Desk PC", "room" => "Hall 2"})
+
+      assert_receive {:nunki_settings_changed, ^id} = changed
+      result = LinkSocket.handle_info(changed, state)
+      assert [%{"type" => "settings", "name" => "Desk PC", "room" => "Hall 2"}] = frames(result)
+    end
+
+    test "only this tournament's announcers can be changed from its page", %{scope: scope, t: t} do
+      other = tournament!(scope, %{"name" => "Another Open"})
+      {b, _key} = announcer!(scope, other, "device-2")
+
+      assert {:error, :not_found} = Hall.update_settings(scope, t, b.id, %{"name" => "Hijack"})
+      assert row(b).name == "Hall PC"
+    end
+
+    test "a removed announcer cannot be changed", %{scope: scope, t: t, announcer: a} do
+      :ok = Hall.revoke(scope, t, a.id)
+      assert {:error, :not_found} = Hall.update_settings(scope, t, a.id, %{"name" => "Ghost"})
     end
   end
 

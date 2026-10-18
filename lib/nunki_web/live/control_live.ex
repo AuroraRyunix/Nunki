@@ -41,6 +41,7 @@ defmodule NunkiWeb.ControlLive do
        update: Updates.notice(),
        update_step: nil,
        update_busy: [],
+       drafts: %{},
        ticking?: false
      )
      |> load()}
@@ -49,7 +50,7 @@ defmodule NunkiWeb.ControlLive do
   # --- what the page shows ---------------------------------------------------
 
   defp load(socket) do
-    rows = rows()
+    rows = rows(socket.assigns.drafts)
     settings = Store.settings()
     voices = Voice.list()
 
@@ -70,9 +71,22 @@ defmodule NunkiWeb.ControlLive do
     |> tick(Enum.any?(rows, & &1.countdown))
   end
 
-  defp rows do
+  # `drafts` holds what is typed into a tournament's name and room fields and
+  # not sent yet, so a reload (every second during a countdown) does not eat it.
+  defp rows(drafts) do
     for t <- Tournaments.list() do
       payload = t["round"]
+      announcer = t["announcer"] || %{}
+
+      values =
+        Map.merge(
+          %{
+            "tournament" => t["id"],
+            "name" => announcer["name"] || Store.device_name(),
+            "room" => announcer["room"] || ""
+          },
+          drafts[t["id"]] || %{}
+        )
 
       %{
         id: t["id"],
@@ -83,7 +97,10 @@ defmodule NunkiWeb.ControlLive do
         round: payload && payload["round"],
         rounds: payload && payload["rounds"],
         boards: payload && length(payload["boards"] || []),
-        countdown: Countdown.get(t["id"])
+        countdown: Countdown.get(t["id"]),
+        announcer_name: announcer["name"],
+        announcer_room: announcer["room"] || "",
+        settings_form: to_form(values, as: :announcer, id: "tournaments-#{t["id"]}-settings")
       }
     end
   end
@@ -157,6 +174,29 @@ defmodule NunkiWeb.ControlLive do
   def handle_event("remove", %{"id" => id}, socket) do
     Tournaments.remove(id)
     {:noreply, socket |> put_flash(:info, gettext("Removed.")) |> load()}
+  end
+
+  def handle_event("announcer_draft", %{"announcer" => %{"tournament" => id} = params}, socket),
+    do: {:noreply, assign(socket, drafts: Map.put(socket.assigns.drafts, id, params))}
+
+  def handle_event("announcer_save", %{"announcer" => %{"tournament" => id} = params}, socket) do
+    case Tournaments.change_settings(id, params["name"] || "", params["room"] || "") do
+      :ok ->
+        # The form goes back to what the server says; its answer is on the way.
+        {:noreply,
+         socket
+         |> assign(drafts: Map.delete(socket.assigns.drafts, id))
+         |> put_flash(:info, gettext("Sent. The server's answer is what you see here."))
+         |> load()}
+
+      {:error, :down} ->
+        {:noreply,
+         put_flash(
+           socket,
+           :error,
+           gettext("The line is down, so the server cannot be asked. Try again when it is up.")
+         )}
+    end
   end
 
   def handle_event("read", %{"id" => id}, socket) do
@@ -335,7 +375,7 @@ defmodule NunkiWeb.ControlLive do
         <ul id="tournaments" class="tournaments" phx-update="stream">
           <li id="tournaments-empty" class="empty">
             {gettext(
-              "No tournament yet. In OpenPairings, open the tournament's Hall announcer page, press \"Add an announcer\" and paste the link below."
+              "No tournament yet. In OpenPairings: the tournament's Settings → Hall announcer → Add an announcer. Paste the link below."
             )}
           </li>
           <li :for={{dom_id, t} <- @streams.tournaments} id={dom_id} class="tournament">
@@ -363,6 +403,34 @@ defmodule NunkiWeb.ControlLive do
                 </p>
               </div>
             </div>
+
+            <.form
+              for={t.settings_form}
+              id={"#{dom_id}-settings"}
+              class="inline-form t-settings"
+              phx-change="announcer_draft"
+              phx-submit="announcer_save"
+            >
+              <.input field={t.settings_form[:tournament]} type="hidden" />
+              <.input
+                field={t.settings_form[:name]}
+                label={gettext("Name")}
+                maxlength="60"
+                disabled={!t.up?}
+              />
+              <.input
+                field={t.settings_form[:room]}
+                label={gettext("Room")}
+                maxlength="60"
+                disabled={!t.up?}
+              />
+              <.button id={"#{dom_id}-settings-save"} type="submit" disabled={!t.up?}>
+                {gettext("Save")}
+              </.button>
+              <p :if={!t.up?} id={"#{dom_id}-settings-down"} class="note">
+                {gettext("Name and room are changed while the line is up; OpenPairings keeps them.")}
+              </p>
+            </.form>
 
             <div class="t-countdown">
               <%= if t.countdown do %>
@@ -460,7 +528,7 @@ defmodule NunkiWeb.ControlLive do
             spellcheck="false"
             hint={
               gettext(
-                "The link from OpenPairings, Hall announcer, \"Add an announcer\". Good once, for fifteen minutes."
+                "The link from OpenPairings: the tournament's Settings → Hall announcer → Add an announcer. Good once, for fifteen minutes."
               )
             }
           />
@@ -554,7 +622,11 @@ defmodule NunkiWeb.ControlLive do
           <.input
             field={@device_form[:name]}
             label={gettext("Name")}
-            hint={gettext("How OpenPairings lists this device.")}
+            hint={
+              gettext(
+                "The name a tournament starts with when you join it. After that, each tournament has its own name above."
+              )
+            }
           />
           <.button id="device-save" type="submit">{gettext("Save")}</.button>
         </.form>

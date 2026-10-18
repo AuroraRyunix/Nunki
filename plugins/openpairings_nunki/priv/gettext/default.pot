@@ -30,7 +30,7 @@ msgstr ""
 
 #: lib/openpairings_nunki/plugin.ex:82
 #, elixir-autogen, elixir-format
-msgid "Adds \"Hall announcer\" to a tournament's menu: join a hall PC running Nunki, and it reads each round's pairings aloud and shows the countdown to the start of the round."
+msgid "Adds \"Hall announcer\" to a tournament's Settings: join a hall PC running Nunki, and it reads each round's pairings aloud and shows the countdown to the start of the round."
 msgstr ""
 
 #: lib/openpairings_nunki_web/live/tournament_live.ex:73
@@ -146,7 +146,7 @@ msgstr ""
 
 #: lib/openpairings_nunki_web/live/index_live.ex:66
 #, elixir-autogen, elixir-format
-msgid "None yet. Open a tournament, choose \"Hall announcer\" in its menu and press \"Add an announcer\"."
+msgid "None yet. Open a tournament's Settings, choose \"Hall announcer\" and press \"Add an announcer\"."
 msgstr ""
 
 #: lib/openpairings_nunki_web/live/index_live.ex:47
@@ -184,14 +184,34 @@ msgstr ""
 msgid "Reports"
 msgstr ""
 
+#: lib/openpairings_nunki_web/live/tournament_live.ex
+#, elixir-autogen, elixir-format
+msgid "Room"
+msgstr ""
+
 #: lib/openpairings_nunki_web/live/tournament_live.ex:275
 #, elixir-autogen, elixir-format
 msgid "Round start"
 msgstr ""
 
+#: lib/openpairings_nunki_web/live/tournament_live.ex
+#, elixir-autogen, elixir-format
+msgid "Save"
+msgstr ""
+
+#: lib/openpairings_nunki_web/live/tournament_live.ex
+#, elixir-autogen, elixir-format
+msgid "Saved."
+msgstr ""
+
 #: lib/openpairings_nunki/plugin.ex:37
 #, elixir-autogen, elixir-format
 msgid "Sends each round's pairings to the announcers in the hall the moment they are public, and lets you start the round countdown and the reading aloud from here."
+msgstr ""
+
+#: lib/openpairings_nunki_web/live/tournament_live.ex
+#, elixir-autogen, elixir-format
+msgid "Settings - Hall announcer"
 msgstr ""
 
 #: lib/openpairings_nunki_web/live/tournament_live.ex:333

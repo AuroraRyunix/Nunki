@@ -50,4 +50,10 @@ defmodule OpenPairingsNunki.Protocol do
   def stop, do: %{type: "stop"}
 
   def pong, do: %{type: "pong"}
+
+  @doc """
+  The announcer's name and room as this server holds them. Sent after
+  `welcome` and whenever either changes; the server is the truth.
+  """
+  def settings(name, room), do: %{type: "settings", name: name, room: room}
 end

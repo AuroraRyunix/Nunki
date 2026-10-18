@@ -156,6 +156,8 @@ p { margin: 0.25rem 0; }
 .check input { width: 1.05rem; height: 1.05rem; accent-color: var(--accent); }
 
 .inline-form { display: flex; align-items: flex-end; gap: 8px; flex-wrap: wrap; }
+.t-settings .note { flex-basis: 100%; margin: 0; }
+.field input:disabled { opacity: 0.55; cursor: not-allowed; }
 
 .flash-group { display: grid; gap: 8px; margin-bottom: 12px; }
 

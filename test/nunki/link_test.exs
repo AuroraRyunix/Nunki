@@ -33,6 +33,61 @@ defmodule Nunki.LinkTest do
     assert Tournaments.links_up() == 1
   end
 
+  describe "name and room (settings)" do
+    test "what the server says is kept per tournament, and what it says next replaces it" do
+      {server, id} =
+        joined(on_welcome: [%{"type" => "settings", "name" => "Hall PC", "room" => "Main hall"}])
+
+      eventually(fn -> Store.tournament(id)["announcer"] end)
+      assert Store.tournament(id)["announcer"] == %{"name" => "Hall PC", "room" => "Main hall"}
+
+      FakeServer.push(server, %{"type" => "settings", "name" => "Side PC", "room" => ""})
+      eventually(fn -> Store.tournament(id)["announcer"]["name"] == "Side PC" end)
+      assert Store.tournament(id)["announcer"]["room"] == ""
+    end
+
+    test "a change asked for here is sent, and stored only when the server answers" do
+      {server, id} =
+        joined(on_welcome: [%{"type" => "settings", "name" => "Hall PC", "room" => "Main hall"}])
+
+      eventually(fn -> Store.tournament(id)["announcer"] end)
+
+      assert :ok = Tournaments.change_settings(id, "  Door PC ", " Foyer ")
+      eventually(fn -> FakeServer.frames(server, "settings") != [] end)
+
+      assert [%{"type" => "settings", "name" => "Door PC", "room" => "Foyer"}] =
+               FakeServer.frames(server, "settings")
+
+      assert Store.tournament(id)["announcer"] == %{"name" => "Hall PC", "room" => "Main hall"}
+
+      FakeServer.push(server, %{"type" => "settings", "name" => "Door PC", "room" => "Foyer"})
+      eventually(fn -> Store.tournament(id)["announcer"]["room"] == "Foyer" end)
+    end
+
+    test "an empty name is not asked for; an empty room is" do
+      {server, id} = joined()
+      assert :ok = Tournaments.change_settings(id, "   ", "")
+      eventually(fn -> FakeServer.frames(server, "settings") != [] end)
+
+      assert [%{"type" => "settings", "room" => ""} = frame] =
+               FakeServer.frames(server, "settings")
+
+      refute Map.has_key?(frame, "name")
+    end
+
+    test "with no line there is nobody to ask" do
+      {:ok, id} =
+        Store.add_tournament(%{
+          "server" => "fake",
+          "socket" => "ws://127.0.0.1:1/p/nunki/link",
+          "key" => "k",
+          "tournament" => %{"id" => "t-9", "name" => "Nowhere Open"}
+        })
+
+      assert {:error, :down} = Tournaments.change_settings(id, "Name", "Room")
+    end
+  end
+
   test "a new round is read once; the same round changed is not read again" do
     {server, id} = joined()
 

@@ -41,6 +41,21 @@ defmodule Nunki.Tournaments do
     Store.remove_tournament(id)
   end
 
+  @doc """
+  Asks the server to change this device's name and room in a tournament.
+  `name` and `room` are trimmed and cut to 60 characters; an empty name is
+  left out of the request (the server keeps the current one anyway), an
+  empty room is sent, because it means "no room". `:ok`, or `{:error, :down}`
+  with the line down. Nothing is stored: the server's `settings` frame
+  answers, and that is what the page shows.
+  """
+  def change_settings(id, name, room) when is_binary(name) and is_binary(room) do
+    name = name |> String.trim() |> String.slice(0, 60)
+    room = room |> String.trim() |> String.slice(0, 60)
+    attrs = if name == "", do: %{"room" => room}, else: %{"name" => name, "room" => room}
+    Link.send_settings(id, attrs)
+  end
+
   @doc "Each joined tournament (without its key) with `up?` and `error` of its line."
   def list do
     for t <- Store.tournaments(), do: Map.merge(t, Map.new(Link.info(t["id"]), &stringify/1))
