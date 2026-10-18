@@ -132,7 +132,7 @@ or use a machine without a desktop, where ALSA is the sound server.
 
 ## Joining a tournament
 
-1. In OpenPairings, the tournament's *Hall announcer* page, "Add an
+1. In OpenPairings (on pairings.cloud), the tournament's *Hall announcer* page, "Add an
    announcer". A link appears, good once and for fifteen minutes.
 2. Paste it into "Join a tournament" on Nunki's control page, press Join.
 3. The tournament is in the list with a green dot. From now on, a round

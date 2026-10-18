@@ -117,8 +117,9 @@ list the same way.
 `openpairings-deploy/deploy_openpairings.py` uploads each plugin listed in
 `OPENPAIRINGS_PLUGINS` into `<remote_dir>/plugins/<name>`, sets
 `PAIRINGS_EDITION`, `PAIRINGS_PLUGINS_DIR` and `PAIRINGS_PLUGINS` at build
-and run time, and builds on the box. Shipping this plugin is one entry
-there (not made here; the deploy repository is not this one's to change):
+and run time, and builds on the box. The plugin has been on the hosted
+OpenPairings at pairings.cloud since 2026-10-18, through this one entry
+(the deploy repository is not this one's to change, so the entry lives there):
 
 ```python
 ("openpairings_nunki", os.path.join(LOCAL_PROJECTS_ROOT, "nunki", "plugins", "openpairings_nunki")),
