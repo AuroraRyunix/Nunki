@@ -18,7 +18,7 @@ defmodule OpenPairingsNunki.Plugin do
   alias PairingsEngine.Tournaments.Tournament
 
   # Kept in step with the plugin's heading in the Nunki CHANGELOG.
-  @version "0.2.0"
+  @version "0.3.0"
 
   @feature "nunki_hall_announcer"
 
