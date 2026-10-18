@@ -5,7 +5,7 @@
 
 [Unit]
 Description=Nunki - the hall announcer
-Documentation=https://github.com/AuroraRyunix/Nunki
+Documentation=https://github.com/teapot-chess/Nunki
 After=network.target
 
 [Service]

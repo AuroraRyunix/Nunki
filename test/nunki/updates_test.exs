@@ -25,7 +25,7 @@ defmodule Nunki.UpdatesTest do
   defp release(version, assets) do
     %{
       "tag_name" => "v" <> version,
-      "html_url" => "https://github.com/AuroraRyunix/Nunki/releases/tag/v" <> version,
+      "html_url" => "https://github.com/teapot-chess/Nunki/releases/tag/v" <> version,
       "assets" => Enum.map(assets, fn {name, size} -> %{"name" => name, "size" => size} end)
     }
   end

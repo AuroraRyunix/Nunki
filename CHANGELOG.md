@@ -15,6 +15,7 @@ tagged so that a version can be skimmed:
 
 ## [Unreleased]
 
+- [Change] **New address.** The repository moved to github.com/teapot-chess; old links still redirect, out of politeness rather than obligation.
 ## [0.2.0] - 2026-10-18
 
 - [Fix] **Stopping Nunki stops the voice too, whoever goes first.** Every program Nunki starts - `say`, `espeak-ng`, PowerShell, `kill` itself - now has a deadline, and is killed when whoever was waiting for it is gone. The voice reading a line aloud is killed even when the Speaker is not given the chance to say goodbye, and whatever is still talking when Nunki stops goes with it. Erlang closes the port and walks away; the program on the other end used to finish its sentence to an empty hall.

@@ -25,7 +25,7 @@
 
 set -eu
 
-REPO="AuroraRyunix/Nunki"
+REPO="teapot-chess/Nunki"
 INSTALL_DIR="/opt/nunki"
 DATA_DIR="/var/lib/nunki"
 CONF_FILE="/etc/nunki/nunki.env"

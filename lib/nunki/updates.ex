@@ -50,7 +50,7 @@ defmodule Nunki.Updates do
   alias Nunki.{Countdown, Paths, Speaker, Store}
   alias Nunki.Updates.Checker
 
-  @repo "AuroraRyunix/Nunki"
+  @repo "teapot-chess/Nunki"
   @latest_url "https://api.github.com/repos/#{@repo}/releases/latest"
   @releases_page "https://github.com/#{@repo}/releases"
   @user_agent "Nunki-UpdateCheck"

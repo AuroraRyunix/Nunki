@@ -3,7 +3,7 @@
 # Raspberry Pi in the hall with speakers on it - as a service that starts
 # with the machine.
 #
-#   curl -fsSL https://github.com/AuroraRyunix/Nunki/releases/latest/download/install.sh | sudo sh
+#   curl -fsSL https://github.com/teapot-chess/Nunki/releases/latest/download/install.sh | sudo sh
 #
 # or, in a hall without internet, from a release unpacked on a stick:
 #
@@ -33,7 +33,7 @@
 
 set -eu
 
-REPO="AuroraRyunix/Nunki"
+REPO="teapot-chess/Nunki"
 INSTALL_DIR="/opt/nunki"
 DATA_DIR="/var/lib/nunki"
 CONF_DIR="/etc/nunki"

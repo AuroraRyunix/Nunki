@@ -30,7 +30,7 @@ followed by a right one with a higher number.
 ## What a release holds
 
 All names are without a version, so that
-`https://github.com/AuroraRyunix/Nunki/releases/latest/download/<name>`
+`https://github.com/teapot-chess/Nunki/releases/latest/download/<name>`
 stays right. The version is inside each file.
 
 | File | What it is | Who asks for it by name |
