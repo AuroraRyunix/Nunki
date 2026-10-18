@@ -64,7 +64,7 @@ defmodule OpenPairingsNunkiWeb.IndexLive do
         <h2>{gettext("Your announcers")}</h2>
         <p :if={@announcers_count == 0} id="nunki-none" class="hint">
           {gettext(
-            "None yet. Open a tournament, choose \"Hall announcer\" in its menu and press \"Add an announcer\"."
+            "None yet. Open a tournament's Settings, choose \"Hall announcer\" and press \"Add an announcer\"."
           )}
         </p>
         <table :if={@announcers_count > 0} class="pe-table">
