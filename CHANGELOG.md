@@ -15,6 +15,7 @@ tagged so that a version can be skimmed:
 
 ## [Unreleased]
 
+- [Feature] **An announcer's room is now a room of the tournament, and it reads only that room's boards.** The free-text field was a label with ambitions; the tournament's rooms (Settings, Rooms in OpenPairings) are the list now, kept by id, so renaming "Hall B" to "Annexe" does not strand anyone. An announcer in a room is sent just the boards the room holds, and a room change sends the round again. No room still means every board. The `settings` frame gains `rooms_available` and, for a room the tournament never heard of, `error: "room"` (hall-link v1, additive). Nunki shows a select when the server sends the list and a text field when it does not. Rooms typed before this existed match nothing, stay on screen as a label, and filter nothing; they are not migrated, because there was nothing to migrate them to.
 - [Change] **New address.** The repository moved to github.com/teapot-chess; old links still redirect, out of politeness rather than obligation.
 ## [0.2.0] - 2026-10-18
 

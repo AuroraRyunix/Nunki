@@ -147,6 +147,12 @@ tournament's row on the control page while the line is up. A change made
 here is a request, and the row shows the new value once the server has sent
 it back.
 
+The room is one of the tournament's rooms, chosen from a list the server
+sends (a text field, as before, with an older server). An announcer in a
+room is sent only the boards that room holds; with no room it gets them
+all. A room name the tournament does not have is refused, and the page says
+so.
+
 ## The pages
 
 - **`/`, the control page.** The joined tournaments (line up or down, and
