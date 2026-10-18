@@ -15,6 +15,8 @@ tagged so that a version can be skimmed:
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-18
+
 - [Feature] **Nunki exists.** It reads the pairings aloud the moment OpenPairings publishes them, white first, byes last, and counts down to the round: ten minutes, five, one, and "starts now". Only the moments still ahead, so a countdown started at five minutes does not open with "ten".
 - [Feature] **English and Dutch**, following the tournament unless the control page says otherwise. Dutch says "je", because nobody in a playing hall has ever been addressed as "u" by a loudspeaker and liked it.
 - [Feature] **The machine's own voice, not the browser's:** PowerShell on Windows, `say` on a Mac, espeak-ng on Linux. It speaks with every page closed and never waits for somebody to click first.
