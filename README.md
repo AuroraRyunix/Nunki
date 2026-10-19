@@ -76,7 +76,8 @@ Every release carries the same files under the same names:
 | Windows, no install | [nunki-windows-x86_64-portable.zip](https://github.com/teapot-chess/Nunki/releases/latest/download/nunki-windows-x86_64-portable.zip) |
 | Linux, PC | [nunki-linux-x86_64.tar.gz](https://github.com/teapot-chess/Nunki/releases/latest/download/nunki-linux-x86_64.tar.gz) |
 | Linux, Raspberry Pi (64-bit) and other arm64 | [nunki-linux-aarch64.tar.gz](https://github.com/teapot-chess/Nunki/releases/latest/download/nunki-linux-aarch64.tar.gz) |
-| Mac, Apple Silicon | [nunki-macos-aarch64.zip](https://github.com/teapot-chess/Nunki/releases/latest/download/nunki-macos-aarch64.zip) |
+| Mac, Apple Silicon (macOS 11 and newer) | [nunki-macos-aarch64.zip](https://github.com/teapot-chess/Nunki/releases/latest/download/nunki-macos-aarch64.zip) |
+| Mac, Intel (macOS 10.13 and newer) | [nunki-macos-x86_64.zip](https://github.com/teapot-chess/Nunki/releases/latest/download/nunki-macos-x86_64.zip) |
 | Checksums | [SHA256SUMS](https://github.com/teapot-chess/Nunki/releases/latest/download/SHA256SUMS) |
 
 **Windows.** The installer is per user, one click, no administrator; Windows
@@ -96,7 +97,8 @@ sudo apt install espeak-ng
 A systemd service, user `nunki` in the `audio` group, data in
 `/var/lib/nunki`, the control page on http://localhost:4062.
 
-**macOS** (Apple Silicon): `nunki-macos-aarch64.zip`, unzip, open
+**macOS** (Apple Silicon, or Intel from macOS 10.13): `nunki-macos-aarch64.zip` or
+`nunki-macos-x86_64.zip`, unzip, open
 `Nunki.app`, "Open Anyway" once ([docs/macos.md](docs/macos.md)).
 
 **Updates.** An installed copy looks for a newer release now and then (one
