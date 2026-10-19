@@ -19,6 +19,9 @@ config :phoenix_live_view, :colocated_assets, disable_symlink_warning: true
 
 config :nunki, NunkiWeb.Endpoint,
   url: [host: "localhost"],
+  # The hosts Nunki answers to, not "localhost" alone (a hall PC is opened by
+  # its address) and not "anything" (DNS rebinding): see `NunkiWeb.HostGuard`.
+  check_origin: {NunkiWeb.HostGuard, :origin_allowed?, []},
   adapter: Bandit.PhoenixAdapter,
   # At a stop, open connections (the hall screen, the control page) get
   # three seconds to go, not Bandit's fifteen.

@@ -1,6 +1,6 @@
 Config.CSP: Missing Content-Security-Policy,lib/nunki_web/router.ex:13,181BDF4
-Config.CSWH: Cross-Site Websocket Hijacking,lib/nunki_web/endpoint.ex:11,4D9B8C5
-Config.CSWH: Cross-Site Websocket Hijacking,lib/nunki_web/endpoint.ex:27,5E70662
+Config.CSWH: Cross-Site Websocket Hijacking,lib/nunki_web/endpoint.ex:15,6FB4F76
+Config.CSWH: Cross-Site Websocket Hijacking,lib/nunki_web/endpoint.ex:31,3D8E38E
 Config.HTTPS: HTTPS Not Enabled,config/prod.exs:0,2B5C077
 Traversal.FileModule: Directory Traversal in `File.chmod`,lib/nunki/launcher_details.ex:152,7D8F700
 Traversal.FileModule: Directory Traversal in `File.chmod`,lib/nunki/launcher_details.ex:157,61B4546
@@ -26,4 +26,4 @@ Traversal.FileModule: Directory Traversal in `File.write`,lib/nunki/store.ex:259
 Traversal.FileModule: Directory Traversal in `File.write`,lib/nunki/updates.ex:336,2754012
 XSS.Raw: XSS,lib/nunki_web/components/core_components.ex:16,72CE8FD
 XSS.Raw: XSS,lib/nunki_web/components/core_components.ex:53,2CBCE5D
-XSS.SendResp: XSS in `send_resp`,lib/nunki_web/endpoint.ex:54,5A85C29
+XSS.SendResp: XSS in `send_resp`,lib/nunki_web/endpoint.ex:58,1B3A0F3
