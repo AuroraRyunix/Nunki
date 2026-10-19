@@ -41,11 +41,23 @@ defmodule Nunki.UpdatesTest do
       assert Updates.asset_name(:velopack, "1.2.3") == "NunkiApp-1.2.3-full.nupkg"
     end
 
-    test "the Mac's is the Apple Silicon zip" do
-      case Updates.asset_name(:manual, "1.0.0", {:unix, :darwin}) do
-        nil -> assert Updates.no_build?({:unix, :darwin})
-        name -> assert name == "nunki-macos-aarch64.zip"
-      end
+    test "the Mac's is the zip of its own architecture" do
+      name = Updates.asset_name(:manual, "1.0.0", {:unix, :darwin})
+      assert name == "nunki-macos-#{Updates.arch()}.zip"
+      assert name in ["nunki-macos-aarch64.zip", "nunki-macos-x86_64.zip"]
+    end
+
+    test "no Mac is told there is no build" do
+      refute Updates.no_build?({:unix, :darwin})
+      refute Updates.no_build?({:unix, :linux})
+      refute Updates.no_build?({:win32, :nt})
+    end
+
+    test "Rosetta counts as the Apple Silicon Mac it is" do
+      assert Updates.arch("aarch64-apple-darwin24.0.0", false) == "aarch64"
+      assert Updates.arch("arm64-apple-darwin24.0.0", false) == "aarch64"
+      assert Updates.arch("x86_64-apple-darwin24.0.0", false) == "x86_64"
+      assert Updates.arch("x86_64-apple-darwin24.0.0", true) == "aarch64"
     end
   end
 

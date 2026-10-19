@@ -40,6 +40,7 @@ stays right. The version is inside each file.
 | `nunki-linux-x86_64.tar.gz` | The Linux release, PCs | `install.sh`, `update.sh` |
 | `nunki-linux-aarch64.tar.gz` | The Linux release, 64-bit Raspberry Pi and other arm64 | the same |
 | `nunki-macos-aarch64.zip` | `Nunki.app` for Apple Silicon, zipped with `ditto` | the download page; a Mac copy's update notice |
+| `nunki-macos-x86_64.zip` | `Nunki.app` for Intel Macs (macOS 10.13 and newer), built only for a release | the same, on an Intel Mac |
 | `install.sh` | The one-line installer | `curl ... \| sudo sh` |
 | `update.sh`, `uninstall.sh` | Copies of what the archive carries, for reading | a person |
 | `SHA256SUMS` | Checksums of everything above and below | `install.sh`, `update.sh` |

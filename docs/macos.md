@@ -1,18 +1,65 @@
 # Nunki on macOS
 
 Every push to `main` builds **`Nunki.app`** for Apple Silicon, and a
-release attaches it, exactly as Alnasl and Arkab do (their `docs/macos.md`
+release attaches it, together with a build for **Intel Macs** from macOS
+10.13 (see [Intel Macs](#intel-macs)), exactly as Alnasl and Arkab do (their `docs/macos.md`
 has the long story of the runtime built on the runner and why). Nobody on
 the project has a Mac: the list at the end is what a person with one still
 has to confirm.
 
 | | |
 |---|---|
-| Apple Silicon only (M1 and later) | `nunki-macos-aarch64.zip`, built on `macos-15` |
+| Apple Silicon (M1 and later) | `nunki-macos-aarch64.zip`, built on `macos-15`, macOS 11 and newer |
+| Intel | `nunki-macos-x86_64.zip`, built on `macos-15-intel`, macOS 10.13 and newer, only for a release or a hand-started run |
 | Runtime | Erlang/OTP compiled on the runner by `rel/macos/build_otp.sh`, with OpenSSL linked into `crypto` statically |
 | Native code | none of Nunki's own: no database, no serial library. The only NIFs are the runtime's |
 | Voice | `say`, which every Mac has |
 | Signed | ad-hoc only, until there is an Apple Developer account (`docs/releasing.md`) |
+
+## Intel Macs
+
+macOS 10 exists only on Intel Macs, so the Intel build is also the one that
+reaches back. It is `nunki-macos-x86_64.zip`, compiled on GitHub's Intel
+runner (`macos-15-intel`; a real Intel machine, nothing is cross-compiled)
+with `MACOSX_DEPLOYMENT_TARGET=10.13`, which `build_otp.sh` and
+`build_app.sh` read like the Apple Silicon build reads 11.0.
+
+It is built **only when a release is published** (a version bump on `main`
+with its changelog section) **or when the workflow is started by hand**
+(*Actions > Build and release > Run workflow*), never on an ordinary push or
+pull request: the Intel runner is slow, which is why Intel was dropped on
+2026-10-14. The `plan` job in `release.yml` decides, from the release's own
+two conditions, and adds the Intel target to the build matrix when it
+should run. A release that cannot build for Intel is not published. A
+hand-started run on a branch builds everything and publishes nothing: the
+`release` job runs only on `main` or a tag.
+
+Nunki's update notice picks the zip that matches the Mac it is on
+(`Nunki.Updates.arch/0`): an Intel Mac gets `nunki-macos-x86_64.zip`, an
+Apple Silicon Mac `nunki-macos-aarch64.zip`, and an Intel Nunki running
+under Rosetta on an Apple Silicon Mac still counts as Apple Silicon
+(`sysctl.proc_translated`). `Nunki.Updates.no_build?/1` is now false
+everywhere.
+
+### How far back
+
+10.13 (High Sierra) is where the Intel build stops. The proof is in the
+smoke test's log: it lists the `minos` of every Mach-O file in the bundle
+(`vtool -show-build`) and `LSMinimumSystemVersion` in `Info.plist`, which the
+test also compares with the target; `build_app.sh` fails the build, naming
+the files, if any asks for more. The launcher is Swift, and macOS before
+10.14.4 has no Swift runtime, so the libraries it uses are copied into
+`Contents/Frameworks` by `swift-stdlib-tool` and found through an `@rpath`.
+A few Foundation and AppKit calls it made are 10.14 or 10.15 and newer
+(`scrollableTextView()`, `FileHandle.seekToEnd()` and relatives,
+`monospacedSystemFont`); `Launcher.swift` asks `#available` and uses the
+older call on 10.13, where it uses any.
+
+**Not tested on a real Mac running 10.13.** The runner is macOS 15. What CI
+proves is that nothing in the bundle asks for more than 10.13 and that the
+app starts and answers on a current macOS. Whether 10.13 runs it, and
+whether `say` speaks the voices Nunki asks for there, is for a person with
+a Mac that old.
 
 ## What the app is
 
