@@ -76,6 +76,15 @@ defmodule OpenPairingsNunkiWeb.LinkSocketTest do
       assert [%{"type" => "refused", "reason" => "revoked"}] = frames(hello(a.device_id, key))
     end
 
+    test "after the account switched the feature off: refused revoked", %{
+      announcer: a,
+      key: key,
+      user: user
+    } do
+      {:ok, _} = PairingsEngine.Features.set_enabled(user, [])
+      assert [%{"type" => "refused", "reason" => "revoked"}] = frames(hello(a.device_id, key))
+    end
+
     test "in another protocol version: refused version", %{announcer: a, key: key} do
       assert [%{"reason" => "version"}] = frames(hello(a.device_id, key, 2))
     end

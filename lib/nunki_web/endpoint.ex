@@ -8,6 +8,10 @@ defmodule NunkiWeb.Endpoint do
     same_site: "Lax"
   ]
 
+  # Before everything: a request that names a host this program does not
+  # answer to (DNS rebinding) gets a 403 and nothing else. See the plug.
+  plug NunkiWeb.HostGuard
+
   socket "/live", Phoenix.LiveView.Socket,
     websocket: [connect_info: [session: @session_options]],
     longpoll: [connect_info: [session: @session_options]]

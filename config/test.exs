@@ -8,6 +8,8 @@ config :nunki, NunkiWeb.Endpoint,
   server: false
 
 config :nunki,
+  # Phoenix's test connections ask for this host.
+  extra_hosts: ["www.example.com"],
   data_dir: Path.expand("../tmp/test/data", __DIR__),
   # Never a sound: every utterance goes to the fake, which writes it down.
   voice_backend: Nunki.Voice.Fake,

@@ -110,6 +110,10 @@ our version numbers.
 Nunki listens on this machine only (port 4062). `NUNKI_LISTEN=lan` opens
 the pages to the hall's network - there is no PIN, so anybody on that
 network can then start a countdown or stop a reading. That is the trade.
+Either way Nunki answers only to its own names: `localhost`, `127.0.0.1`,
+`PHX_HOST` and, with `lan`, the machine's host name and addresses. A request
+for any other host (a web page that pointed its own name at this machine, or
+a reverse proxy that forwards one) gets a 403.
 
 ## Sound on Linux: an open question
 

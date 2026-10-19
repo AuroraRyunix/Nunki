@@ -24,6 +24,12 @@ tournament's Settings get "Hall announcer" (`tournament_settings_entries/2`,
 group "publishing"), and the page sits in the Settings frame with the rail
 beside it. It is not in the tournament's top bar.
 
+The feature is access, not just a menu entry: the plugin asks whether the
+tournament owner's account still has it on when an announcer joins (a join
+link made before the switch-off is refused as expired) and at every `hello`
+(an announcer that was joined before is refused as `revoked`; the page still
+lists the announcers with the feature off, and Remove still works).
+
 An announcer's name and room are kept in `nunki_announcers` and are the
 truth for both sides; see "Name and room" in `docs/protocol.md`.
 

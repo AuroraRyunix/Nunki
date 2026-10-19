@@ -22,7 +22,12 @@ data_dir =
 # as well (NUNKI_LISTEN=lan; an arbiter's laptop starting the countdown from
 # across the room). There is no PIN in this version: lan means anybody on
 # that network.
-listen = if System.get_env("NUNKI_LISTEN") == "lan", do: {0, 0, 0, 0}, else: {127, 0, 0, 1}
+lan? = System.get_env("NUNKI_LISTEN") == "lan"
+listen = if lan?, do: {0, 0, 0, 0}, else: {127, 0, 0, 1}
+
+# `NunkiWeb.HostGuard` adds this machine's names and addresses to the hosts it
+# answers to only when Nunki was told to listen on the network.
+config :nunki, listen: if(lan?, do: :lan, else: :loopback)
 
 if config_env() != :test do
   config :nunki, NunkiWeb.Endpoint,
