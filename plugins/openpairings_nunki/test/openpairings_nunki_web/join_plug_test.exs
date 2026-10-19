@@ -55,6 +55,12 @@ defmodule OpenPairingsNunkiWeb.JoinPlugTest do
     assert id == a.id
   end
 
+  test "a code made before the feature was switched off is expired", %{code: code, user: user} do
+    {:ok, _} = PairingsEngine.Features.set_enabled(user, [])
+    assert join(code).status == 410
+    refute Repo.get_by(Announcer, device_id: "dev-abc")
+  end
+
   test "a code works once", %{code: code} do
     assert join(code).status == 200
     assert join(code).status == 410

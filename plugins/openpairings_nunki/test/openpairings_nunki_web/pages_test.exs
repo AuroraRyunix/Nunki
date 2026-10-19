@@ -225,8 +225,27 @@ defmodule OpenPairingsNunkiWeb.PagesTest do
       assert_receive {:nunki_send, %{type: "stop"}}
     end
 
+    test "with the feature off an announcer that joined can still be removed", %{
+      conn: conn,
+      user: user,
+      scope: scope,
+      t: t
+    } do
+      {a, _key} = announcer!(scope, t)
+      {:ok, _} = Features.set_enabled(user, [])
+      Hall.subscribe(t.id)
+      view = page(conn, t)
+
+      assert has_element?(view, "#nunki-not-enabled")
+      refute has_element?(view, "#nunki-add")
+
+      view |> element("#nunki-remove-#{a.id}") |> render_click()
+      assert Repo.get!(Announcer, a.id).revoked_at
+    end
+
     test "with the feature off, nothing is sent", %{conn: conn, user: user, t: t} do
       publish!(t, 1)
+      {a, _key} = announcer!(Scope.for_user(user), t)
       {:ok, _} = Features.set_enabled(user, [])
       Hall.subscribe(t.id)
       view = page(conn, t)
@@ -234,8 +253,6 @@ defmodule OpenPairingsNunkiWeb.PagesTest do
       assert has_element?(view, "#nunki-not-enabled")
       render_click(view, "read", %{})
       refute_received {:nunki_send, _}
-
-      {a, _key} = announcer!(Scope.for_user(user), t)
 
       render_submit(view, "save_settings", %{
         "announcer" => %{"id" => "#{a.id}", "name" => "Nope"}

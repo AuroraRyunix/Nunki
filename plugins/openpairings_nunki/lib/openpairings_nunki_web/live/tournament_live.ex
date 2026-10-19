@@ -64,9 +64,22 @@ defmodule OpenPairingsNunkiWeb.TournamentLive do
 
   ## ---------- events ----------
 
+  # Removing an announcer is let through with the feature off: switching it
+  # off must not leave the admin unable to revoke the announcers already
+  # joined.
+  @impl true
+  def handle_event("remove", %{"id" => id}, socket) do
+    case Hall.revoke(socket.assigns.current_scope, socket.assigns.tournament, id) do
+      :ok ->
+        {:noreply, socket |> assign(note: gettext("Announcer removed."), error: nil) |> load()}
+
+      {:error, :not_found} ->
+        {:noreply, assign(socket, error: gettext("That announcer is already gone."), note: nil)}
+    end
+  end
+
   # The buttons are not drawn with the feature off; a button that is not
   # drawn is still an event anybody can send.
-  @impl true
   def handle_event(_event, _params, %{assigns: %{enabled?: false}} = socket),
     do: {:noreply, assign(socket, error: off_text(), note: nil)}
 
@@ -78,16 +91,6 @@ defmodule OpenPairingsNunkiWeb.TournamentLive do
   end
 
   def handle_event("hide_join", _params, socket), do: {:noreply, assign(socket, join: nil)}
-
-  def handle_event("remove", %{"id" => id}, socket) do
-    case Hall.revoke(socket.assigns.current_scope, socket.assigns.tournament, id) do
-      :ok ->
-        {:noreply, socket |> assign(note: gettext("Announcer removed."), error: nil) |> load()}
-
-      {:error, :not_found} ->
-        {:noreply, assign(socket, error: gettext("That announcer is already gone."), note: nil)}
-    end
-  end
 
   def handle_event("settings_draft", %{"announcer" => %{"id" => id} = params}, socket),
     do: {:noreply, assign(socket, drafts: Map.put(socket.assigns.drafts, id, params))}
@@ -417,152 +420,155 @@ defmodule OpenPairingsNunkiWeb.TournamentLive do
               </button>
             </div>
           </section>
+        <% end %>
 
-          <section id="nunki-announcers" class="card">
-            <h2>{gettext("Announcers")}</h2>
+        <%!-- Outside the feature's switch on purpose: with the feature off the
+             admin still sees the announcers that joined, and can remove them. --%>
+        <section id="nunki-announcers" class="card">
+          <h2>{gettext("Announcers")}</h2>
 
-            <p :if={@announcers_count == 0} id="nunki-no-announcers" class="hint">
-              {gettext("No announcer has joined this tournament yet.")}
+          <p :if={@announcers_count == 0} id="nunki-no-announcers" class="hint">
+            {gettext("No announcer has joined this tournament yet.")}
+          </p>
+
+          <table :if={@announcers_count > 0} class="pe-table">
+            <thead>
+              <tr>
+                <th scope="col">{gettext("Name")}</th>
+
+                <th scope="col">{gettext("State")}</th>
+
+                <th scope="col">{gettext("Last seen")}</th>
+
+                <th scope="col">{gettext("Reports")}</th>
+
+                <th scope="col"><span class="sr-only">{gettext("Actions")}</span></th>
+              </tr>
+            </thead>
+
+            <tbody id="nunki-announcer-list" phx-update="stream">
+              <tr :for={{dom_id, r} <- @streams.announcers} id={dom_id}>
+                <td>
+                  <span id={"#{dom_id}-name"}>
+                    {if(r.announcer.name == "", do: r.announcer.device_id, else: r.announcer.name)}
+                  </span>
+                  <span :if={r.room} id={"#{dom_id}-room"} class="hint">
+                    &middot; {r.room.name}
+                  </span>
+                  <span :if={r.legacy_room} id={"#{dom_id}-room"} class="hint">
+                    &middot; {r.legacy_room}
+                  </span>
+                  <span :if={r.announcer.software != ""} class="hint">
+                    &middot; {r.announcer.software}
+                  </span>
+
+                  <.form
+                    :if={@enabled?}
+                    for={r.form}
+                    id={"nunki-settings-#{r.id}"}
+                    phx-change="settings_draft"
+                    phx-submit="save_settings"
+                    style="display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; margin-top: 6px"
+                  >
+                    <.input field={r.form[:id]} type="hidden" />
+                    <.input
+                      field={r.form[:name]}
+                      type="text"
+                      label={gettext("Name")}
+                      maxlength="60"
+                    />
+                    <.input
+                      field={r.form[:room_id]}
+                      type="select"
+                      label={gettext("Room")}
+                      options={@room_options}
+                    />
+                    <button type="submit" class="pe-btn" id={"nunki-settings-save-#{r.id}"}>
+                      {gettext("Save")}
+                    </button>
+                  </.form>
+                  <p :if={@enabled? and r.legacy_room} id={"#{dom_id}-legacy-room"} class="hint">
+                    {gettext("Typed as \"%{room}\", not a room of this tournament.",
+                      room: r.legacy_room
+                    )}
+                  </p>
+                  <p :if={@enabled? and not @rooms?} id={"#{dom_id}-no-rooms"} class="hint">
+                    {gettext("This tournament has no rooms yet; make them in Settings, Rooms.")}
+                  </p>
+                </td>
+
+                <td id={"#{dom_id}-state"}>
+                  <span class={if(r.online?, do: "ok-note", else: "hint")}>
+                    {if(r.online?, do: gettext("online"), else: gettext("offline"))}
+                  </span>
+                </td>
+
+                <td class="hint">{when_text(r.announcer.last_seen_at)}</td>
+
+                <td class="hint" id={"#{dom_id}-status"}>{status_text(r.announcer.status)}</td>
+
+                <td style="text-align: right">
+                  <button
+                    type="button"
+                    class="pe-btn"
+                    id={"nunki-remove-#{r.id}"}
+                    phx-click="remove"
+                    phx-value-id={r.id}
+                    data-confirm={gettext("Remove this announcer? It forgets this tournament.")}
+                  >
+                    {gettext("Remove")}
+                  </button>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div :if={@enabled?} class="actions">
+            <button type="button" class="pe-btn primary" id="nunki-add" phx-click="add">
+              {gettext("Add an announcer")}
+            </button>
+          </div>
+
+          <div :if={@enabled? and @join} id="nunki-join" style="margin-top: 12px">
+            <p class="hint">
+              {gettext(
+                "Open Nunki on the hall PC, paste this link (or scan the code) and press Join. The link works once, until %{time}.",
+                time: when_text(@join.expires_at)
+              )}
             </p>
 
-            <table :if={@announcers_count > 0} class="pe-table">
-              <thead>
-                <tr>
-                  <th scope="col">{gettext("Name")}</th>
-
-                  <th scope="col">{gettext("State")}</th>
-
-                  <th scope="col">{gettext("Last seen")}</th>
-
-                  <th scope="col">{gettext("Reports")}</th>
-
-                  <th scope="col"><span class="sr-only">{gettext("Actions")}</span></th>
-                </tr>
-              </thead>
-
-              <tbody id="nunki-announcer-list" phx-update="stream">
-                <tr :for={{dom_id, r} <- @streams.announcers} id={dom_id}>
-                  <td>
-                    <span id={"#{dom_id}-name"}>
-                      {if(r.announcer.name == "", do: r.announcer.device_id, else: r.announcer.name)}
-                    </span>
-                    <span :if={r.room} id={"#{dom_id}-room"} class="hint">
-                      &middot; {r.room.name}
-                    </span>
-                    <span :if={r.legacy_room} id={"#{dom_id}-room"} class="hint">
-                      &middot; {r.legacy_room}
-                    </span>
-                    <span :if={r.announcer.software != ""} class="hint">
-                      &middot; {r.announcer.software}
-                    </span>
-
-                    <.form
-                      for={r.form}
-                      id={"nunki-settings-#{r.id}"}
-                      phx-change="settings_draft"
-                      phx-submit="save_settings"
-                      style="display: flex; gap: 8px; align-items: flex-end; flex-wrap: wrap; margin-top: 6px"
-                    >
-                      <.input field={r.form[:id]} type="hidden" />
-                      <.input
-                        field={r.form[:name]}
-                        type="text"
-                        label={gettext("Name")}
-                        maxlength="60"
-                      />
-                      <.input
-                        field={r.form[:room_id]}
-                        type="select"
-                        label={gettext("Room")}
-                        options={@room_options}
-                      />
-                      <button type="submit" class="pe-btn" id={"nunki-settings-save-#{r.id}"}>
-                        {gettext("Save")}
-                      </button>
-                    </.form>
-                    <p :if={r.legacy_room} id={"#{dom_id}-legacy-room"} class="hint">
-                      {gettext("Typed as \"%{room}\", not a room of this tournament.",
-                        room: r.legacy_room
-                      )}
-                    </p>
-                    <p :if={not @rooms?} id={"#{dom_id}-no-rooms"} class="hint">
-                      {gettext("This tournament has no rooms yet; make them in Settings, Rooms.")}
-                    </p>
-                  </td>
-
-                  <td id={"#{dom_id}-state"}>
-                    <span class={if(r.online?, do: "ok-note", else: "hint")}>
-                      {if(r.online?, do: gettext("online"), else: gettext("offline"))}
-                    </span>
-                  </td>
-
-                  <td class="hint">{when_text(r.announcer.last_seen_at)}</td>
-
-                  <td class="hint" id={"#{dom_id}-status"}>{status_text(r.announcer.status)}</td>
-
-                  <td style="text-align: right">
-                    <button
-                      type="button"
-                      class="pe-btn"
-                      id={"nunki-remove-#{r.id}"}
-                      phx-click="remove"
-                      phx-value-id={r.id}
-                      data-confirm={gettext("Remove this announcer? It forgets this tournament.")}
-                    >
-                      {gettext("Remove")}
-                    </button>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-
-            <div class="actions">
-              <button type="button" class="pe-btn primary" id="nunki-add" phx-click="add">
-                {gettext("Add an announcer")}
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
+              <input
+                type="text"
+                readonly
+                id="nunki-join-link"
+                value={@join.url}
+                style="flex: 1 1 24rem; min-width: 0; font-family: monospace"
+              />
+              <button
+                type="button"
+                class="pe-btn"
+                id="nunki-copy-link"
+                phx-hook=".CopyJoinLink"
+                phx-update="ignore"
+                data-target="nunki-join-link"
+                data-copied={gettext("Copied")}
+              >
+                {gettext("Copy")}
               </button>
             </div>
 
-            <div :if={@join} id="nunki-join" style="margin-top: 12px">
-              <p class="hint">
-                {gettext(
-                  "Open Nunki on the hall PC, paste this link (or scan the code) and press Join. The link works once, until %{time}.",
-                  time: when_text(@join.expires_at)
-                )}
-              </p>
-
-              <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
-                <input
-                  type="text"
-                  readonly
-                  id="nunki-join-link"
-                  value={@join.url}
-                  style="flex: 1 1 24rem; min-width: 0; font-family: monospace"
-                />
-                <button
-                  type="button"
-                  class="pe-btn"
-                  id="nunki-copy-link"
-                  phx-hook=".CopyJoinLink"
-                  phx-update="ignore"
-                  data-target="nunki-join-link"
-                  data-copied={gettext("Copied")}
-                >
-                  {gettext("Copy")}
-                </button>
-              </div>
-
-              <div id="nunki-join-qr" style="margin-top: 8px; width: 240px; max-width: 100%">
-                {Phoenix.HTML.raw(@join.qr_svg)}
-              </div>
-
-              <div class="actions">
-                <button type="button" class="pe-btn" id="nunki-hide-join" phx-click="hide_join">
-                  {gettext("Done")}
-                </button>
-              </div>
+            <div id="nunki-join-qr" style="margin-top: 8px; width: 240px; max-width: 100%">
+              {Phoenix.HTML.raw(@join.qr_svg)}
             </div>
-          </section>
-        <% end %>
+
+            <div class="actions">
+              <button type="button" class="pe-btn" id="nunki-hide-join" phx-click="hide_join">
+                {gettext("Done")}
+              </button>
+            </div>
+          </div>
+        </section>
       </.settings_page>
 
       <script :type={Phoenix.LiveView.ColocatedHook} name=".CopyJoinLink">

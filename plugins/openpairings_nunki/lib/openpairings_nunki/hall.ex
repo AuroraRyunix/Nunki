@@ -27,8 +27,9 @@ defmodule OpenPairingsNunki.Hall do
   import Ecto.Query
 
   alias OpenPairingsNunki.{Announcer, Countdown, JoinCode, Protocol}
-  alias PairingsEngine.Accounts.Scope
-  alias PairingsEngine.{Repo, Rooms, Tournaments}
+  alias OpenPairingsNunki.Plugin
+  alias PairingsEngine.Accounts.{Scope, User}
+  alias PairingsEngine.{Features, Repo, Rooms, Tournaments}
   alias PairingsEngine.Tournaments.Tournament
 
   @code_alphabet ~c"abcdefghijklmnopqrstuvwxyz234567"
@@ -102,7 +103,8 @@ defmodule OpenPairingsNunki.Hall do
   them. Answers `{:ok, %{announcer, key, tournament}}` - `key` the one copy
   of the device's secret there will ever be - or `{:error, reason}` with
   `:not_found` (no such code, or its tournament is gone), `:used` or
-  `:expired`.
+  `:expired` - which a code made before the account's announcer was
+  switched off also is.
 
   The same device joining the same tournament again (it was removed, or
   forgot the key) gets its row back with a new key, not a second row.
@@ -117,6 +119,7 @@ defmodule OpenPairingsNunki.Hall do
            :ok <- usable(jc, now),
            %Tournament{} = t <-
              Tournaments.get_tournament(jc.tournament_id) || {:error, :not_found},
+           :ok <- if(feature_on?(t), do: :ok, else: {:error, :expired}),
            :ok <- spend(jc, now) do
         key = random_key()
         announcer = register(t, attrs, key, now)
@@ -198,8 +201,9 @@ defmodule OpenPairingsNunki.Hall do
   @doc """
   The announcer `device_id` whose key is `key`: `{:ok, announcer}`, or
   `{:error, :key}` for no such pair, `{:error, :revoked}` for one removed
-  in OpenPairings (or whose tournament is gone). The hash is compared in
-  constant time against every row the device has.
+  in OpenPairings (or whose tournament is gone, or whose account has
+  switched the announcer off: the switch is access, not just a menu entry).
+  The hash is compared in constant time against every row the device has.
   """
   def authenticate(device_id, key) when is_binary(device_id) and is_binary(key) do
     hash = sha256(key)
@@ -214,11 +218,22 @@ defmodule OpenPairingsNunki.Hall do
         {:error, :revoked}
 
       %Announcer{} = a ->
-        if Tournaments.get_tournament(a.tournament_id), do: {:ok, a}, else: {:error, :revoked}
+        case Tournaments.get_tournament(a.tournament_id) do
+          %Tournament{} = t -> if feature_on?(t), do: {:ok, a}, else: {:error, :revoked}
+          nil -> {:error, :revoked}
+        end
     end
   end
 
   def authenticate(_device_id, _key), do: {:error, :key}
+
+  # Whether the account that owns `tournament` has the announcer switched on.
+  # Asked at every join and every hello: an announcer is a way to receive the
+  # tournament's rounds, so turning the feature off has to cut it off.
+  defp feature_on?(%Tournament{user_id: user_id}) do
+    user = user_id && Repo.get(User, user_id)
+    Features.enabled?(user, Plugin.feature())
+  end
 
   @doc "The announcer row with `id`, or nil (gone, or never was)."
   def get_announcer(id), do: Repo.get(Announcer, id)

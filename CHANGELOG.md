@@ -15,6 +15,7 @@ tagged so that a version can be skimmed:
 
 ## [Unreleased]
 
+- [Fix] **Switching the hall announcer off now cuts the announcers off.** The feature only removed the menu entry: announcers already joined kept receiving every round (and read it aloud), a join link made in the fifteen minutes before still worked, and the admin could not remove an announcer because the disabled-feature guard swallowed Remove. An announcer of an account without the feature is now refused at `hello` (as revoked) and at joining; the page keeps listing the announcers, with Remove, while the feature is off.
 - [Security] **A web page can no longer drive the announcer by renaming it.** The pages were open to any `Host` and any socket origin, so a page in the hall PC's browser could point its own name at 127.0.0.1, count as same-origin, and press the control page's buttons, including the ones that decide what the hall's loudspeakers read out. Nunki now answers 403 to a `Host` that is not its own (`localhost`, `127.0.0.1`, `PHX_HOST`, and with `NUNKI_LISTEN=lan` the machine's host name and addresses), and the live socket checks the same list. The launcher, the in-app window, the hall screen on another machine and LAN mode ask for those names and carry on as before.
 
 ## [0.3.1] - 2026-10-18
