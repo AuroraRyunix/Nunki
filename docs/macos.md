@@ -14,7 +14,7 @@ has to confirm.
 | Runtime | Erlang/OTP compiled on the runner by `rel/macos/build_otp.sh`, with OpenSSL linked into `crypto` statically |
 | Native code | none of Nunki's own: no database, no serial library. The only NIFs are the runtime's |
 | Voice | `say`, which every Mac has |
-| Signed | ad-hoc only, until there is an Apple Developer account (`docs/releasing.md`) |
+| Signed | Developer ID, hardened runtime, notarised and stapled (`docs/releasing.md`) |
 
 ## Intel Macs
 
@@ -81,16 +81,30 @@ others. Afterwards press "Look for voices again" on the control page.
 Without one, `say` reads Dutch with an English voice, which is a sound
 worth hearing once.
 
-## Unsigned, for now
+## Signing
 
-The first open asks: macOS says it cannot check the app for malicious
-software. Open System Settings, Privacy & Security, and press "Open Anyway"
-beside Nunki. Once per download.
+Every Mach-O file in the app (the Erlang runtime, `beam.smp`, the NIF
+libraries) is signed with the Developer ID Application certificate, the
+hardened runtime and a timestamp, from the inside out, then the bundle. The
+BEAM's JIT needs entitlements the hardened runtime otherwise forbids
+(`rel/macos/entitlements.plist` says which). The bundle is then sent to
+Apple's notary service and the ticket is stapled to it, so a Mac with no
+network at the venue opens it without a question. The workflow asks
+Gatekeeper itself (`spctl -a -vvv -t exec`) and fails unless the answer is
+"Notarized Developer ID".
+
+So the first start is a double-click. Only a build from a fork, which has no
+signing secrets, is ad-hoc signed; macOS then refuses it once and *System
+Settings > Privacy & Security > Open Anyway* is the way in.
+
+To try the signing without a release: run the workflow by hand on any branch
+with **mac_only** ticked. It builds, signs, notarises and checks the Mac
+apps and publishes nothing.
 
 ## Testing a build on a real Mac
 
 1. Download `nunki-macos-aarch64.zip` from the release, unzip, move
-   `Nunki.app` to Applications, open it ("Open Anyway" as above).
+   `Nunki.app` to Applications, open it.
 2. The window says it is running; the browser opens on the control page.
 3. "Test voice", English: heard. Download a Dutch voice, "Look for voices
    again", choose it, "Test voice", Dutch: heard, in Dutch.
