@@ -108,7 +108,7 @@ A systemd service, user `nunki` in the `audio` group, data in
 
 **macOS** (Apple Silicon, or Intel from macOS 10.13): `nunki-macos-aarch64.zip` or
 `nunki-macos-x86_64.zip`, unzip, open
-`Nunki.app`, "Open Anyway" once ([docs/macos.md](docs/macos.md)).
+`Nunki.app` (signed and notarised, so no question; [docs/macos.md](docs/macos.md)).
 
 **Updates.** An installed copy looks for a newer release now and then (one
 small request to GitHub, switched off by a checkbox) and says so at the top
