@@ -80,6 +80,15 @@ Every release carries the same files under the same names:
 | Mac, Intel (macOS 10.13 and newer) | [nunki-macos-x86_64.zip](https://github.com/teapot-chess/Nunki/releases/latest/download/nunki-macos-x86_64.zip) |
 | Checksums | [SHA256SUMS](https://github.com/teapot-chess/Nunki/releases/latest/download/SHA256SUMS) |
 
+**Checking a download.** From the next release on, every file in a release, `SHA256SUMS` included, carries signed build provenance: a GitHub artifact attestation, signed keylessly through Sigstore, so there is no key of ours to lose. With the [GitHub CLI](https://cli.github.com/):
+
+```sh
+gh attestation verify <file> --repo teapot-chess/Nunki
+sha256sum --check --ignore-missing SHA256SUMS
+```
+
+The first line says this exact file was built by this repository's release workflow. `SHA256SUMS` is attested too, so the second line is as trustworthy as the first.
+
 **Windows.** The installer is per user, one click, no administrator; Windows
 says it does not know the program, as it does of any unsigned installer:
 "More info", then "Run anyway". Or the portable zip: unpack, run
