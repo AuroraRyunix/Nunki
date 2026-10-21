@@ -62,7 +62,7 @@ for ever without saying why.
 | `rel/windows/build_installer.ps1` | `vpk pack`, with the check that no `state.json` is packed |
 | `rel/windows/build_icon.py` | draws `Nunki.ico` and the Mac icon from the mark; run by hand when the mark changes |
 | `rel/linux/*` | `install.sh`, `update.sh`, `uninstall.sh`, the unit (in the `audio` group) and the root-owned updater |
-| `rel/macos/*` | `Nunki.app` around the release, its Swift launcher, signing once there is an Apple account |
+| `rel/macos/*` | `Nunki.app` around the release, its Swift launcher, signing and notarisation |
 | `lib/nunki/updates.ex`, `updates/checker.ex` | the check, the notice, the hand-over |
 | `tools/release_notes.sh` | the changelog section of one version |
 
@@ -125,7 +125,7 @@ Nothing below has been done.
 
 **macOS**
 
-- [ ] `Nunki.app` opens after "Open Anyway"; `say` speaks; a downloaded
+- [ ] `Nunki.app` opens with no question; `say` speaks; a downloaded
       Dutch voice is listed and used. See `docs/macos.md`.
 
 ## Version numbers
@@ -133,3 +133,30 @@ Nothing below has been done.
 Patch for fixes, minor for anything an arbiter would notice, 1.0.0 the day
 a whole tournament has been announced by an installed copy without
 anybody reaching for the Stop button in anger.
+
+## Signing the Mac app
+
+The macOS jobs sign `Nunki.app` with the Developer ID Application
+certificate and the hardened runtime, notarise it with Apple, staple the
+ticket and check it with `spctl` before the zip is made. A build without
+the secrets (a fork) skips all of that with a warning and ships ad-hoc
+signed. The secrets belong to the `teapot-chess` organisation, so every
+repository in it has them:
+
+| Secret | What |
+|---|---|
+| `MACOS_CERT_P12` | the *Developer ID Application* certificate with its private key and the intermediate, exported as `.p12`, then base64 |
+| `MACOS_CERT_PASSWORD` | the `.p12`'s password |
+| `APPLE_TEAM_ID` | the ten-character team id |
+| `ASC_KEY_ID` | the App Store Connect API key's id |
+| `ASC_ISSUER_ID` | the API key's issuer id |
+| `ASC_KEY_P8` | the API key's `.p8` file, base64 |
+
+`rel/macos/sign_and_notarize.sh` signs every binary with the hardened
+runtime and the BEAM's entitlements, notarises with the API key, staples,
+and asks Gatekeeper. The temporary keychain is deleted at the end of the
+job, whatever happened.
+
+To test the signing without releasing anything, start the workflow by hand
+on a branch with **mac_only**: it builds and notarises the Mac apps and
+publishes nothing.
